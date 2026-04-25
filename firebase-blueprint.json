@@ -1,0 +1,163 @@
+{
+  "entities": {
+    "Member": {
+      "title": "Member",
+      "description": "Church member profile",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name" },
+        "phone": { "type": "string", "description": "Phone number" },
+        "email": { "type": "string", "format": "email" },
+        "address": { "type": "string" },
+        "birthDate": { "type": "string", "format": "date" },
+        "joinDate": { "type": "string", "format": "date" },
+        "isBaptized": { "type": "boolean" },
+        "baptismDate": { "type": "string", "format": "date" },
+        "bloodType": { "type": "string", "enum": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"] },
+        "allergies": { "type": "string" },
+        "observations": { "type": "string" },
+        "photoUrl": { "type": "string", "format": "uri" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "attachments": { "type": "array", "items": { "$ref": "#/definitions/Attachment" } }
+      },
+      "required": ["name", "phone"]
+    },
+    "Attachment": {
+      "title": "Attachment",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string" },
+        "url": { "type": "string", "description": "Base64 or Storage URL" },
+        "size": { "type": "integer" },
+        "uploadedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "Event": {
+      "title": "Event",
+      "description": "Church event or activity",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "type": { "type": "string", "enum": ["Culto", "Acampamento", "Congresso", "Passeio", "Outro"] },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "maxParticipants": { "type": "integer" },
+        "publicId": { "type": "string", "description": "Unique ID for public sharing" },
+        "imageUrl": { "type": "string", "format": "uri" },
+        "attachments": { "type": "array", "items": { "$ref": "#/definitions/Attachment" } }
+      },
+      "required": ["title", "type", "startDate", "endDate", "publicId"]
+    },
+    "Registration": {
+      "title": "Registration",
+      "description": "Event participant registration",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "cpf": { "type": "string" },
+        "address": { "type": "string" },
+        "birthDate": { "type": "string", "format": "date" },
+        "isMinor": { "type": "boolean" },
+        "isMember": { "type": "boolean" },
+        "memberId": { "type": "string" },
+        "guardianAuthorization": { "$ref": "#/definitions/Attachment" },
+        "emergencyContacts": {
+          "type": "object",
+          "properties": {
+            "name1": { "type": "string" },
+            "phone1": { "type": "string" },
+            "name2": { "type": "string" },
+            "phone2": { "type": "string" }
+          }
+        },
+        "bloodType": { "type": "string" },
+        "allergies": { "type": "string" },
+        "observations": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "paid"] },
+        "amountPaid": { "type": "number" },
+        "registeredAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["eventId", "name", "phone", "status"]
+    },
+    "EventType": {
+      "title": "Event Type",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" }
+      },
+      "required": ["name"]
+    },
+    "EventTemplate": {
+      "title": "Event Template",
+      "description": "Reusable event model",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "title": { "type": "string" },
+        "type": { "type": "string" },
+        "location": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "maxParticipants": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "title", "type"]
+    },
+    "ChurchSettings": {
+      "title": "Church Settings",
+      "description": "Global configuration for the church",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "logoUrl": { "type": "string" },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "socialMedia": {
+          "type": "object",
+          "properties": {
+            "instagram": { "type": "string" },
+            "facebook": { "type": "string" },
+            "youtube": { "type": "string" }
+          }
+        },
+        "pixKey": { "type": "string" },
+        "announcement": { "type": "string" }
+      },
+      "required": ["name"]
+    }
+  },
+  "firestore": {
+    "/config/church": {
+      "schema": "ChurchSettings",
+      "description": "Global application configuration"
+    },
+    "/members/{memberId}": {
+      "schema": "Member",
+      "description": "Collection of church members"
+    },
+    "/events/{eventId}": {
+      "schema": "Event",
+      "description": "Collection of church events"
+    },
+    "/registrations/{registrationId}": {
+      "schema": "Registration",
+      "description": "Event participant registrations"
+    },
+    "/eventTypes/{typeId}": {
+      "schema": "EventType",
+      "description": "Categories for church events"
+    },
+    "/eventTemplates/{templateId}": {
+      "schema": "EventTemplate",
+      "description": "Reusable event templates"
+    }
+  }
+}

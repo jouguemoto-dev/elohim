@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common Helpers
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    
+    // Member Validation
+    function isValidMember(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 256 &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() <= 32 &&
+             (!('attachments' in data) || (data.attachments is list));
+    }
+
+    // Event Validation
+    function isValidEvent(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 256 &&
+             data.type in ['Culto', 'Acampamento', 'Congresso', 'Passeio', 'Outro'] &&
+             data.publicId is string && data.publicId.size() > 0 &&
+             (!('imageUrl' in data) || (data.imageUrl is string)) &&
+             (!('attachments' in data) || (data.attachments is list));
+    }
+
+    // Registration Validation
+    function isValidRegistration(data) {
+      return data.eventId is string && data.eventId.size() > 0 &&
+             data.name is string && data.name.size() > 0 &&
+             data.phone is string && data.phone.size() > 0 &&
+             data.status in ['pending', 'paid'] &&
+             (!('isMember' in data) || data.isMember is bool) &&
+             (!('cpf' in data) || data.cpf is string) &&
+             (!('address' in data) || (data.address is string && data.address.size() <= 500)) &&
+             (!('birthDate' in data) || data.birthDate is string) &&
+             (!('isMinor' in data) || data.isMinor is bool);
+    }
+
+    // Settings Validation
+    function isValidSettings(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 200;
+    }
+
+    // Event Type Validation
+    function isValidEventType(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 100;
+    }
+
+    // Event Template Validation
+    function isValidEventTemplate(data) {
+      return data.name is string && data.name.size() > 0 &&
+             data.title is string && data.title.size() > 0 &&
+             data.type is string &&
+             data.createdAt is string;
+    }
+
+    // Config Collection
+    match /config/church {
+      allow read: if true;
+      allow write: if isSignedIn() && isValidSettings(request.resource.data);
+    }
+
+    // Event Types Collection
+    match /eventTypes/{typeId} {
+      allow read: if true;
+      allow write: if isSignedIn() && isValidEventType(request.resource.data);
+      allow delete: if isSignedIn();
+    }
+
+    // Members Collection
+    match /members/{memberId} {
+      allow read, write: if isSignedIn(); // In a real app, check for admin role
+      allow create: if isSignedIn() && isValidId(memberId) && isValidMember(request.resource.data);
+      allow update: if isSignedIn() && isValidMember(request.resource.data);
+    }
+
+    // Events Collection
+    match /events/{eventId} {
+      allow read: if true; // Publicly readable for dynamic forms
+      allow write: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(eventId) && isValidEvent(request.resource.data);
+      allow update: if isSignedIn() && isValidEvent(request.resource.data);
+    }
+
+    // Registrations Collection
+    match /registrations/{registrationId} {
+      allow create: if isValidRegistration(request.resource.data); // Public registration
+      allow read, update, delete: if isSignedIn(); // Admin only management
+      allow list: if isSignedIn();
+    }
+
+    // Event Templates Collection
+    match /eventTemplates/{templateId} {
+      allow read, write: if isSignedIn();
+      allow create: if isSignedIn() && isValidEventTemplate(request.resource.data);
+      allow update: if isSignedIn() && isValidEventTemplate(request.resource.data);
+    }
+  }
+}
