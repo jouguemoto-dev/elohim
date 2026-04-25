@@ -97,19 +97,16 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
   const Card = ({ title, value, icon: Icon, onClick, subtitle }: any) => (
     <motion.div 
-      whileHover={{ y: -4, scale: 1.02 }}
+      whileHover={{ y: -2 }}
       onClick={onClick}
-      className="bg-zinc-900/40 backdrop-blur-xl p-5 md:p-6 rounded-[2rem] border border-white/5 shadow-2xl flex flex-col md:flex-row md:items-start justify-between cursor-pointer group transition-all hover:bg-white/5 hover:border-white/10"
+      className="bg-zinc-900/50 p-5 rounded-xl border border-zinc-800 flex flex-col justify-between cursor-pointer group transition-all hover:border-zinc-700"
     >
       <div className="flex-1 min-w-0">
-        <p className="text-zinc-500 text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] mb-2">{title}</p>
+        <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-3">{title}</p>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-xl md:text-3xl font-black text-white tracking-tighter truncate">{value}</h3>
-          {subtitle && <span className="hidden sm:inline text-[9px] text-emerald-400 font-bold tracking-tight">{subtitle}</span>}
+          <h3 className="text-2xl font-bold text-white tracking-tight truncate">{value}</h3>
+          {subtitle && <span className="hidden sm:inline text-[9px] text-emerald-500 font-bold tracking-tight">{subtitle}</span>}
         </div>
-      </div>
-      <div className="hidden md:flex p-3 bg-zinc-800/50 rounded-2xl text-zinc-400 transition-all group-hover:bg-white/10 group-hover:text-white group-hover:shadow-lg group-hover:shadow-white/5 shrink-0">
-        <Icon size={22} />
       </div>
     </motion.div>
   );
@@ -125,22 +122,22 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
       {/* Birthday Alerts Banner */}
       {stats.birthdayMembers.length > 0 && (
         <motion.div 
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-emerald-500/10 border border-emerald-500/20 rounded-[2.5rem] p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
+          className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6"
         >
-          <div className="flex items-center gap-5">
-            <div className="p-4 bg-emerald-500/20 rounded-3xl text-emerald-400">
-              <Cake size={32} />
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
+              <Cake size={24} />
             </div>
             <div>
-              <h4 className="text-white font-black text-lg md:text-xl tracking-tight">Aniversariantes</h4>
-              <p className="text-emerald-400/70 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
-                {stats.birthdayMembers.length} {stats.birthdayMembers.length === 1 ? 'membro soprando' : 'membros sopram'} velinhas esta semana
+              <h4 className="text-white font-bold text-lg tracking-tight">Aniversariantes</h4>
+              <p className="text-emerald-500/60 text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5">
+                {stats.birthdayMembers.length} {stats.birthdayMembers.length === 1 ? 'membro' : 'membros'} esta semana
               </p>
             </div>
           </div>
-          <div className="flex -space-x-4 overflow-hidden p-1">
+          <div className="flex -space-x-3 overflow-hidden">
             {stats.birthdayMembers.slice(0, 5).map((member, index) => (
               <div 
                 key={member.id} 
@@ -202,17 +199,17 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Members */}
-        <div className="bg-zinc-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden flex flex-col h-[480px]">
-          <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-            <h3 className="font-bold text-[11px] text-zinc-400 uppercase tracking-[0.2em]">Recém Integrados</h3>
+        <div className="bg-zinc-950 rounded-xl border border-zinc-900 overflow-hidden flex flex-col h-[480px]">
+          <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between">
+            <h3 className="font-bold text-[10px] text-zinc-500 uppercase tracking-[0.2em]">Recém Integrados</h3>
             <button 
               onClick={() => onNavigate('members')}
-              className="text-[10px] font-bold text-zinc-300 hover:text-white transition-colors uppercase tracking-widest px-3 py-1 bg-white/5 rounded-lg border border-white/5"
+              className="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-[0.2em]"
             >
               Base Completa
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-white/[0.02] px-2">
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-900 px-2">
             {stats.recentMembers.length > 0 ? stats.recentMembers.map((member) => {
               const isBirthdaySoon = stats.birthdayMembers.some(bm => bm.id === member.id);
               const isToday = member.birthDate && 
@@ -276,36 +273,36 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         </div>
 
         {/* Upcoming Events */}
-        <div className="bg-zinc-900/40 backdrop-blur-xl rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden flex flex-col h-[480px]">
-          <div className="px-8 py-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-            <h3 className="font-bold text-[11px] text-zinc-400 uppercase tracking-[0.2em]">Próximos Eventos</h3>
+        <div className="bg-zinc-950 rounded-xl border border-zinc-900 overflow-hidden flex flex-col h-[480px]">
+          <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between">
+            <h3 className="font-bold text-[10px] text-zinc-500 uppercase tracking-[0.2em]">Próximos Eventos</h3>
             <button 
               onClick={() => onNavigate('events')}
-              className="text-[10px] font-bold text-zinc-300 hover:text-white transition-colors uppercase tracking-widest px-3 py-1 bg-white/5 rounded-lg border border-white/5"
+              className="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-[0.2em]"
             >
               Ver Tudo
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {stats.upcomingEvents.length > 0 ? stats.upcomingEvents.map((event) => (
-              <div key={event.id} className="flex gap-5 p-5 rounded-3xl border border-white/5 hover:border-white/10 hover:bg-white/[0.03] transition-all group">
-                <div className="shrink-0 w-12 h-12 flex flex-col items-center justify-center bg-zinc-800 text-zinc-400 rounded-2xl border border-white/10 group-hover:scale-110 transition-transform">
-                  <span className="text-[9px] font-bold uppercase leading-none mb-1">{format(new Date(event.startDate), 'MMM', { locale: ptBR })}</span>
-                  <span className="text-base font-black text-white">{format(new Date(event.startDate), 'dd')}</span>
+              <div key={event.id} className="flex gap-4 p-4 rounded-lg border border-transparent hover:border-zinc-800 hover:bg-zinc-900/50 transition-all group">
+                <div className="shrink-0 w-10 h-10 flex flex-col items-center justify-center bg-zinc-900 text-zinc-500 rounded border border-zinc-800">
+                  <span className="text-[8px] font-bold uppercase leading-none mb-1">{format(new Date(event.startDate), 'MMM', { locale: ptBR })}</span>
+                  <span className="text-sm font-bold text-white leading-none">{format(new Date(event.startDate), 'dd')}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-bold text-white truncate mb-1">{event.title}</h4>
-                  <div className="flex items-center gap-4 text-[10px] text-zinc-500 mt-2 font-medium">
-                    <span className="flex items-center gap-1.5"><Clock size={12} className="text-zinc-600" /> {format(new Date(event.startDate), 'HH:mm')}</span>
-                    <span className="truncate flex items-center gap-1.5"><MapPin size={12} className="text-zinc-600" /> {event.location}</span>
+                  <h4 className="text-xs font-bold text-white truncate mb-1">{event.title}</h4>
+                  <div className="flex items-center gap-3 text-[9px] text-zinc-500 font-medium">
+                    <span className="flex items-center gap-1"><Clock size={10} className="text-zinc-700" /> {format(new Date(event.startDate), 'HH:mm')}</span>
+                    <span className="truncate flex items-center gap-1"><MapPin size={10} className="text-zinc-700" /> {event.location}</span>
                   </div>
                 </div>
-                <div className="self-center p-2 rounded-full bg-white/5 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="self-center text-zinc-700 group-hover:text-zinc-500 transition-colors">
                    <ArrowRight size={14} />
                 </div>
               </div>
             )) : (
-              <div className="flex-1 flex items-center justify-center text-zinc-600 text-[10px] font-bold uppercase tracking-widest italic">Agenda vazia</div>
+              <div className="flex-1 flex items-center justify-center text-zinc-700 text-[9px] font-bold uppercase tracking-widest italic">Agenda vazia</div>
             )}
           </div>
         </div>

@@ -217,103 +217,102 @@ export default function RegistrationsModule() {
 
   return (
     <div className="max-w-7xl mx-auto h-full flex flex-col space-y-6">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-2">
         <div>
           <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Tesouraria</h2>
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.3em]">Gestão de participações e ativos</p>
+          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.3em]">Gestão financeira</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button 
             onClick={exportToExcel}
-            className="group bg-white/5 border border-white/10 text-zinc-400 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95"
+            className="group bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
             title="Exportar Excel"
           >
-            <FileSpreadsheet size={16} />
-            <span className="hidden lg:inline">Exportar</span>
+            <FileSpreadsheet size={14} />
+            <span className="hidden lg:inline">Excel</span>
           </button>
           
           <button 
             onClick={exportToPDF}
-            className="group bg-white/5 border border-white/10 text-zinc-400 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95"
+            className="group bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
             title="Relatório PDF"
           >
-            <Printer size={16} />
+            <Printer size={14} />
             <span className="hidden lg:inline">PDF</span>
           </button>
 
           <button 
             onClick={() => setIsModalOpen(true)}
-            className="bg-white text-black px-6 py-3 rounded-2xl flex items-center gap-2 text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-zinc-200 transition-all active:scale-95 flex-1 sm:flex-initial justify-center"
+            className="bg-white text-black px-4 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-lg"
           >
-            <UserPlus size={18} />
-            <span>Inserir</span>
+            <UserPlus size={14} />
+            <span>Inserir Inscrição</span>
           </button>
         </div>
       </header>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="bg-zinc-900/40 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 shadow-2xl group hover:border-white/10 transition-all">
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">Unidade de Participação</p>
+        <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-900 shadow-xl transition-all">
+          <p className="text-zinc-600 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Participantes</p>
           <div className="flex items-center justify-between">
-            <h3 className="text-3xl font-black text-white tracking-tighter">{filteredRegistrations.length}</h3>
-            <div className="p-3 bg-zinc-800 rounded-2xl text-zinc-500 group-hover:text-blue-400 transition-colors shadow-inner">
-               <Users2 size={24} />
+            <h3 className="text-2xl font-bold text-white tracking-tight">{filteredRegistrations.length}</h3>
+            <div className="p-2 bg-zinc-900 rounded border border-zinc-800 text-zinc-700">
+               <Users2 size={18} />
             </div>
           </div>
         </div>
-        <div className="bg-zinc-900/40 backdrop-blur-xl p-6 rounded-[2rem] border border-white/5 shadow-2xl group hover:border-white/10 transition-all">
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-4">Confirmações Totais</p>
+        <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-900 shadow-xl transition-all">
+          <p className="text-zinc-600 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Pagos</p>
           <div className="flex items-center justify-between">
-            <h3 className="text-3xl font-black text-emerald-400 tracking-tighter">
+            <h3 className="text-2xl font-bold text-emerald-500 tracking-tight">
                {filteredRegistrations.filter(r => r.status === 'paid').length}
             </h3>
-            <div className="p-3 bg-zinc-800 rounded-2xl text-zinc-500 group-hover:text-emerald-400 transition-colors shadow-inner">
-               <CheckCircle2 size={24} />
+            <div className="p-2 bg-zinc-900 rounded border border-zinc-800 text-zinc-700">
+               <CheckCircle2 size={18} />
             </div>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-[2rem] shadow-2xl border border-white/10 text-black group hover:bg-zinc-200 transition-all">
-          <p className="text-black/50 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Capital Arrecadado</p>
+        <div className="bg-white p-6 rounded-xl shadow-xl border border-white text-black transition-all">
+          <p className="text-black/40 text-[9px] font-bold uppercase tracking-[0.2em] mb-4">Arrecadado</p>
           <div className="flex items-center justify-between">
-            <h3 className="text-3xl font-black tracking-tighter">R$ {totalCollected.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
-            <div className="p-3 bg-black/5 rounded-2xl text-black/20 group-hover:text-black transition-colors">
-               <DollarSign size={24} />
+            <h3 className="text-2xl font-bold tracking-tight">R$ {totalCollected.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+            <div className="p-2 bg-black/5 rounded text-black/10">
+               <DollarSign size={18} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-zinc-900/40 backdrop-blur-xl p-4 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col lg:flex-row gap-4 items-stretch">
-        <div className="relative flex-1 flex items-center bg-white/5 px-6 py-4 rounded-3xl border border-white/5 focus-within:ring-2 focus-within:ring-white/10 transition-all group">
-          <Search className="text-zinc-600 mr-4 group-focus-within:text-white transition-colors" size={20} />
+      <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-900 flex flex-col lg:flex-row gap-4 items-stretch">
+        <div className="relative flex-1 flex items-center bg-zinc-900 px-4 py-3 rounded-lg border border-zinc-800 group">
+          <Search className="text-zinc-700 mr-3 group-focus-within:text-white transition-colors" size={16} />
           <input 
             type="text" 
-            placeholder="Pesquisar por nome, CPF ou terminal..." 
-            className="bg-transparent border-none text-sm w-full outline-none text-white placeholder:text-zinc-600 font-medium"
+            placeholder="Pesquisar..." 
+            className="bg-transparent border-none text-[10px] uppercase font-bold tracking-widest w-full outline-none text-white placeholder:text-zinc-800"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         
         <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative group flex-1 sm:flex-initial">
-             <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-white transition-colors pointer-events-none" size={16} />
+          <div className="relative group">
              <select 
                value={eventFilter}
                onChange={(e) => setEventFilter(e.target.value)}
-               className="w-full sm:min-w-[240px] bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest pl-14 pr-12 py-5 rounded-[1.75rem] text-zinc-400 focus:text-white outline-none hover:bg-white/10 transition-all appearance-none cursor-pointer"
+               className="w-full sm:min-w-[200px] bg-zinc-900 border border-zinc-800 text-[9px] font-bold uppercase tracking-widest px-4 py-3 rounded-lg text-zinc-500 focus:text-white outline-none hover:bg-zinc-800 transition-all appearance-none cursor-pointer"
              >
-               <option value="all" className="bg-zinc-900">Programas Globais</option>
+               <option value="all" className="bg-zinc-950">Todos os Eventos</option>
                {events.map(event => (
-                 <option key={event.id} value={event.id} className="bg-zinc-900">{event.title}</option>
+                 <option key={event.id} value={event.id} className="bg-zinc-950">{event.title}</option>
                ))}
              </select>
-             <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none group-hover:text-zinc-400 transition-colors" size={16} />
+             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-700 pointer-events-none group-hover:text-zinc-500 transition-colors" size={14} />
           </div>
 
-          <div className="bg-white/5 p-1 rounded-[1.75rem] border border-white/5 flex">
+          <div className="bg-zinc-900 p-1 rounded-lg border border-zinc-800 flex">
              {[
                { id: 'all', label: 'Tudo' },
                { id: 'paid', label: 'Liquidado' },
@@ -323,8 +322,8 @@ export default function RegistrationsModule() {
                  key={tab.id}
                  onClick={() => setStatusFilter(tab.id as any)}
                  className={cn(
-                   "px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shrink-0",
-                   statusFilter === tab.id ? "bg-white text-black shadow-2xl" : "text-zinc-500 hover:text-zinc-100"
+                   "px-4 py-1.5 rounded text-[9px] font-bold uppercase tracking-widest transition-all",
+                   statusFilter === tab.id ? "bg-white text-black shadow-lg" : "text-zinc-600 hover:text-zinc-300"
                  )}
                >
                  {tab.label}
@@ -335,8 +334,8 @@ export default function RegistrationsModule() {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-hidden bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] shadow-2xl flex flex-col">
-        <div className="overflow-y-auto flex-1 p-2 sm:p-4">
+      <div className="flex-1 overflow-hidden bg-zinc-950 border border-zinc-900 rounded-xl shadow-xl flex flex-col">
+        <div className="overflow-y-auto flex-1">
           {loading ? (
             <div className="h-40 flex items-center justify-center text-zinc-600 font-bold text-[10px] uppercase tracking-widest">Sincronizando banco de dados...</div>
           ) : filteredRegistrations.length === 0 ? (

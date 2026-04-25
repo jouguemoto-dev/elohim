@@ -231,7 +231,7 @@ export default function MembersModule() {
           <h2 className="text-2xl font-bold text-white mb-1 tracking-tight">Membros</h2>
           <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em]">Base de dados central</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
            <div className="relative">
             <input 
               type="file" 
@@ -242,70 +242,72 @@ export default function MembersModule() {
             />
             <button 
               onClick={() => document.getElementById('member-import')?.click()}
-              className="bg-white/5 border border-white/10 text-zinc-400 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95"
+              className="bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
               title="Importar Membros"
             >
-              <Upload size={16} />
+              <Upload size={14} />
               <span className="hidden lg:inline">Importar</span>
             </button>
           </div>
 
           <button 
             onClick={exportToExcel}
-            className="bg-white/5 border border-white/10 text-zinc-400 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95"
+            className="bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
             title="Exportar Excel"
           >
-            <FileSpreadsheet size={16} />
-            <span className="hidden lg:inline">Exportar</span>
+            <FileSpreadsheet size={14} />
+            <span className="hidden lg:inline">Excel</span>
           </button>
           
           <button 
             onClick={exportToPDF}
-            className="bg-white/5 border border-white/10 text-zinc-400 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95"
+            className="bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
             title="Imprimir"
           >
-            <Printer size={16} />
+            <Printer size={14} />
             <span className="hidden lg:inline">PDF</span>
           </button>
 
           <button 
             onClick={() => { setEditingMember(null); setIsModalOpen(true); }}
-            className="bg-white text-black px-6 py-3 rounded-2xl flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-2xl active:scale-95 flex-1 sm:flex-initial justify-center"
+            className="bg-white text-black px-4 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-lg active:scale-95"
           >
-            <Plus size={18} />
-            <span>Cadastrar</span>
+            <Plus size={14} />
+            <span>Novo Membro</span>
           </button>
         </div>
       </header>
 
       {/* Filters */}
-      <div className="bg-zinc-900/40 backdrop-blur-xl p-5 rounded-3xl border border-white/5 shadow-2xl flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <div className="relative flex-1 w-full flex items-center bg-white/5 px-4 py-2.5 rounded-2xl border border-white/5 focus-within:ring-2 focus-within:ring-white/10 transition-all">
-            <Search className="text-zinc-500 mr-3" size={18} />
+      <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-900 flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <div className="relative flex-1 w-full flex items-center bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-800 transition-all">
+            <Search className="text-zinc-600 mr-2" size={14} />
             <input 
               type="text" 
-              placeholder="Buscar por nome ou telefone..." 
-              className="bg-transparent border-none text-sm w-full outline-none text-white placeholder:text-zinc-500"
+              placeholder="Buscar..." 
+              className="bg-transparent border-none text-[10px] uppercase font-bold tracking-widest w-full outline-none text-white placeholder:text-zinc-700"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="flex items-center bg-white/5 rounded-2xl p-1.5 border border-white/5">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center bg-zinc-900 rounded-lg p-1 border border-zinc-800">
               {(['all', 'active', 'inactive'] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
                   className={cn(
-                    "px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-[0.1em] transition-all",
-                    statusFilter === s ? "bg-white text-black shadow-lg" : "text-zinc-500 hover:text-zinc-300"
+                    "px-3 py-1.5 rounded text-[9px] font-bold uppercase tracking-[0.1em] transition-all",
+                    statusFilter === s ? "bg-white text-black" : "text-zinc-600 hover:text-zinc-400"
                   )}
                 >
                   {s === 'all' ? 'Todos' : s === 'active' ? 'Ativos' : 'Inativos'}
                 </button>
               ))}
             </div>
+          </div>
+        </div>
             <button 
               onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
               className={cn(
@@ -316,8 +318,7 @@ export default function MembersModule() {
               <Filter size={16} />
               <span className="hidden sm:inline">Filtros</span>
             </button>
-          </div>
-        </div>
+
 
         {/* Advanced Filters */}
         <AnimatePresence>
@@ -387,61 +388,60 @@ export default function MembersModule() {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-hidden bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] shadow-2xl flex flex-col">
-        <div className="overflow-y-auto overflow-x-auto flex-1 px-4">
+      <div className="flex-1 overflow-hidden bg-zinc-950 border border-zinc-900 rounded-xl flex flex-col">
+        <div className="overflow-y-auto overflow-x-auto flex-1">
           {loading ? (
-            <div className="h-40 flex items-center justify-center text-zinc-600 font-bold text-[10px] uppercase tracking-widest">Acessando registros...</div>
+            <div className="h-40 flex items-center justify-center text-zinc-600 font-bold text-[10px] uppercase tracking-widest">Carregando...</div>
           ) : filteredMembers.length === 0 ? (
-            <div className="h-40 flex items-center justify-center text-zinc-600 text-xs italic">Nenhum membro encontrado.</div>
+            <div className="h-40 flex items-center justify-center text-zinc-600 font-bold text-[10px] uppercase tracking-widest italic">Vazio</div>
           ) : (
-            <table className="w-full text-left border-separate border-spacing-y-2">
-              <thead className="sticky top-0 z-10 bg-[#050505]/40 backdrop-blur-lg">
-                <tr>
-                  <th className="px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Participante</th>
-                  <th className="hidden md:table-cell px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Contato</th>
-                  <th className="hidden sm:table-cell px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em]">Status</th>
-                  <th className="px-6 py-5 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.2em] text-right">Ações</th>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-zinc-900">
+                  <th className="px-6 py-4 text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Nome</th>
+                  <th className="hidden md:table-cell px-6 py-4 text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Contato</th>
+                  <th className="hidden sm:table-cell px-6 py-4 text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Status</th>
+                  <th className="px-6 py-4 text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em] text-right">Ações</th>
                 </tr>
               </thead>
-              <tbody className="text-xs">
+              <tbody className="text-[11px] divide-y divide-zinc-900">
                 {filteredMembers.map((member) => (
-                  <tr key={member.id} className="group">
-                    <td className="px-6 py-4 bg-white/[0.02] rounded-l-2xl border-y border-l border-white/5 transition-colors group-hover:bg-white/[0.04]">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-500 overflow-hidden shrink-0 border border-white/5 transition-transform group-hover:scale-105">
-                          {member.photoUrl ? <img src={member.photoUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <Users size={18} />}
+                  <tr key={member.id} className="group hover:bg-zinc-900/30 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-zinc-900 flex items-center justify-center text-zinc-700 overflow-hidden shrink-0 border border-zinc-800">
+                          {member.photoUrl ? <img src={member.photoUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <Users size={14} />}
                         </div>
                         <div>
-                          <p className="font-bold text-white leading-tight group-hover:text-white transition-colors">{member.name}</p>
-                          <p className="text-[10px] text-zinc-500 font-medium mt-1 uppercase tracking-wider">{member.isBaptized ? 'Batizado' : 'Regular'}</p>
+                          <p className="font-bold text-white transition-colors">{member.name}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="hidden md:table-cell px-6 py-4 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.04] text-zinc-400 font-mono tracking-tighter">
+                    <td className="hidden md:table-cell px-6 py-4 text-zinc-500 font-mono tracking-tighter">
                       {member.phone}
                     </td>
-                    <td className="hidden sm:table-cell px-6 py-4 bg-white/[0.02] border-y border-white/5 group-hover:bg-white/[0.04]">
+                    <td className="hidden sm:table-cell px-6 py-4">
                       <span className={cn(
-                        "text-[9px] font-black uppercase px-2.5 py-1 rounded-lg flex items-center gap-2 w-fit",
-                        member.status === 'active' ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-zinc-800 text-zinc-500 border border-transparent"
+                        "text-[8px] font-bold uppercase px-2 py-0.5 rounded border flex items-center gap-2 w-fit",
+                        member.status === 'active' ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/10" : "bg-zinc-900 text-zinc-600 border-zinc-800"
                       )}>
-                        <div className={cn("w-1 h-1 rounded-full", member.status === 'active' ? "bg-emerald-400" : "bg-zinc-500")} />
+                        <div className={cn("w-1 h-1 rounded-full", member.status === 'active' ? "bg-emerald-500" : "bg-zinc-700")} />
                         {member.status === 'active' ? 'Ativo' : 'Inativo'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 bg-white/[0.02] rounded-r-2xl border-y border-r border-white/5 group-hover:bg-white/[0.04] text-right">
-                      <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
                         <button 
                            onClick={() => { setEditingMember(member); setIsModalOpen(true); }}
-                           className="p-2 text-zinc-500 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                           className="p-1.5 text-zinc-600 hover:text-white transition-all"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={14} />
                         </button>
                         <button 
                           onClick={() => setConfirmModal({ isOpen: true, id: member.id!, name: member.name })}
-                          className="p-2 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
+                          className="p-1.5 text-zinc-700 hover:text-red-500 transition-all font-bold"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={14} />
                         </button>
                       </div>
                     </td>
@@ -451,8 +451,8 @@ export default function MembersModule() {
             </table>
           )}
         </div>
-        <div className="px-10 py-5 bg-white/[0.02] border-t border-white/5 flex justify-between items-center text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
-          Total de {filteredMembers.length} registros no filtro
+        <div className="px-6 py-3 border-t border-zinc-900 flex justify-between items-center text-[9px] text-zinc-600 font-bold uppercase tracking-[0.2em]">
+          {filteredMembers.length} registros
         </div>
       </div>
 

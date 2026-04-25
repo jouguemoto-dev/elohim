@@ -372,22 +372,22 @@ export default function EventsModule() {
           <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Agenda</h2>
           <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.3em]">Cronograma e logistica</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2">
           <button 
             onClick={exportEventListExcel}
-            className="group bg-white/5 border border-white/10 text-zinc-400 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95"
+            className="group bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
             title="Exportar Excel"
           >
-            <FileSpreadsheet size={16} />
-            <span className="hidden lg:inline">Exportar</span>
+            <FileSpreadsheet size={14} />
+            <span className="hidden lg:inline">Excel</span>
           </button>
           
           <button 
             onClick={exportEventListPDF}
-            className="group bg-white/5 border border-white/10 text-zinc-400 px-4 py-3 rounded-2xl flex items-center gap-2 text-xs font-bold uppercase tracking-widest hover:bg-white/10 hover:text-white transition-all shadow-sm active:scale-95"
+            className="group bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
             title="Relatório PDF"
           >
-            <Printer size={16} />
+            <Printer size={14} />
             <span className="hidden lg:inline">PDF</span>
           </button>
 
@@ -397,10 +397,10 @@ export default function EventsModule() {
               setTemplateRevision(0);
               setIsEventModalOpen(true); 
             }}
-            className="bg-white text-black px-6 py-3 rounded-2xl flex items-center gap-2 text-xs font-black uppercase tracking-widest shadow-2xl hover:bg-zinc-200 transition-all active:scale-95 flex-1 sm:flex-initial justify-center"
+            className="bg-white text-black px-4 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-lg"
           >
-            <Plus size={18} />
-            <span>Novo</span>
+            <Plus size={14} />
+            <span>Novo Projeto</span>
           </button>
         </div>
       </header>
@@ -408,47 +408,36 @@ export default function EventsModule() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 min-h-0">
         {/* Events List Sidebar */}
         <div className={cn(
-          "lg:col-span-1 flex flex-col min-h-0 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden transition-all",
+          "lg:col-span-1 flex flex-col min-h-0 bg-zinc-950 border border-zinc-900 rounded-xl overflow-hidden transition-all",
           mobileView === 'detail' && "hidden lg:flex"
         )}>
-           <div className="p-6 border-b border-white/5 bg-white/[0.02]">
-             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Programação</h3>
+           <div className="p-4 border-b border-zinc-900 bg-white/[0.01]">
+             <h3 className="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.3em]">Programação</h3>
            </div>
-           <div className="flex-1 overflow-y-auto divide-y divide-white/[0.02] px-2">
+           <div className="flex-1 overflow-y-auto divide-y divide-zinc-900 px-1">
              {events.length === 0 ? (
-               <div className="p-12 text-center text-zinc-600 font-bold text-[10px] uppercase tracking-widest italic py-20">Sem eventos</div>
+               <div className="p-8 text-center text-zinc-700 font-bold text-[9px] uppercase tracking-widest italic py-12">Sem eventos</div>
              ) : events.map(event => (
                <button
                  key={event.id}
                  onClick={() => { setSelectedEvent(event); setMobileView('detail'); }}
                  className={cn(
-                   "w-full text-left p-5 transition-all flex items-start justify-between border-l-4 rounded-2xl mx-1 my-1 group",
-                   selectedEvent?.id === event.id ? "bg-white/5 border-white shadow-lg" : "hover:bg-white/[0.03] border-transparent"
+                   "w-full text-left p-4 transition-all flex items-start justify-between rounded-lg mx-1 my-0.5 group",
+                   selectedEvent?.id === event.id ? "bg-zinc-900" : "hover:bg-zinc-900/50"
                  )}
                >
                  <div className="flex-1 min-w-0 pr-2">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between mb-1.5">
                        <div className="flex items-center gap-3">
-                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 bg-zinc-800 rounded-lg text-zinc-400 group-hover:text-white transition-colors">{event.type}</span>
-                          <span className="text-[10px] font-mono text-zinc-600 group-hover:text-zinc-400 transition-colors tracking-tighter">{format(new Date(event.startDate), 'dd/MM/yy')}</span>
+                          <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-zinc-800 rounded border border-zinc-700 text-zinc-500 group-hover:text-white transition-colors">{event.type}</span>
+                          <span className="text-[9px] font-mono text-zinc-700 tracking-tighter">{format(new Date(event.startDate), 'dd/MM/yy')}</span>
                        </div>
-                       <button 
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           setSelectedEvent(event);
-                           setIsQrModalOpen(true);
-                         }}
-                         className="p-1.5 opacity-0 group-hover:opacity-100 hover:bg-white/10 rounded-lg transition-all text-zinc-500 hover:text-white"
-                         title="QR Code de Inscrição"
-                       >
-                         <QrCode size={14} />
-                       </button>
                     </div>
-                    <h4 className="text-sm font-bold text-white group-hover:translate-x-1 transition-transform truncate">{event.title}</h4>
+                    <h4 className="text-xs font-bold text-white group-hover:translate-x-1 transition-transform truncate">{event.title}</h4>
                  </div>
-                 <ChevronRight size={18} className={cn(
+                 <ChevronRight size={14} className={cn(
                    "transition-all self-center",
-                   selectedEvent?.id === event.id ? "text-white translate-x-1" : "text-zinc-700 opacity-0 group-hover:opacity-100"
+                   selectedEvent?.id === event.id ? "text-white translate-x-1" : "text-zinc-800 opacity-0 group-hover:opacity-100"
                  )} />
                </button>
              ))}
@@ -457,33 +446,33 @@ export default function EventsModule() {
 
         {/* Event Detail / Registrations */}
         <div className={cn(
-          "lg:col-span-3 flex flex-col min-h-0 bg-zinc-900/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] shadow-2xl overflow-hidden transition-all",
+          "lg:col-span-3 flex flex-col min-h-0 bg-zinc-950 border border-zinc-900 rounded-xl overflow-hidden transition-all",
           mobileView === 'list' && "hidden lg:flex"
         )}>
           {!selectedEvent ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-zinc-700 p-12 text-center bg-white/[0.01]">
-              <div className="w-24 h-24 rounded-full bg-zinc-800/50 flex items-center justify-center mb-6">
-                <Calendar size={48} className="opacity-20 text-white" />
+            <div className="flex-1 flex flex-col items-center justify-center text-zinc-700 p-12 text-center">
+              <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-4">
+                <Calendar size={32} className="opacity-20 text-white" />
               </div>
-              <p className="font-bold text-zinc-600 text-[10px] uppercase tracking-[0.2em]">Selecione um projeto</p>
+              <p className="font-bold text-zinc-700 text-[9px] uppercase tracking-[0.2em]">Selecione um projeto</p>
             </div>
           ) : (
             <div className="flex flex-col h-full">
-              <header className="p-6 md:p-8 border-b border-white/5 flex flex-col sm:flex-row sm:items-center justify-between bg-white/[0.02] gap-6">
-                <div className="flex items-center gap-4 md:gap-6">
+              <header className="p-6 border-b border-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between bg-white/[0.01] gap-6">
+                <div className="flex items-center gap-5">
                    <button 
                      onClick={() => setMobileView('list')}
-                     className="p-3 bg-white/5 text-zinc-400 rounded-2xl border border-white/10 lg:hidden"
+                     className="p-2 bg-zinc-900 text-zinc-500 rounded-lg lg:hidden"
                    >
-                     <ChevronRight className="rotate-180" size={20} />
+                     <ChevronRight className="rotate-180" size={16} />
                    </button>
-                   <div className="bg-white text-black h-12 w-12 md:h-14 md:w-14 rounded-2xl flex flex-col items-center justify-center shadow-2xl shrink-0">
-                      <span className="text-[9px] md:text-[10px] font-black leading-none mb-1 uppercase tracking-tighter">{format(new Date(selectedEvent.startDate), 'MMM', { locale: ptBR })}</span>
-                      <span className="text-lg md:text-xl font-black leading-none tracking-tighter">{format(new Date(selectedEvent.startDate), 'dd')}</span>
+                   <div className="bg-white text-black h-12 w-12 rounded-lg flex flex-col items-center justify-center shadow-lg shrink-0">
+                      <span className="text-[8px] font-bold leading-none mb-1 uppercase tracking-tighter">{format(new Date(selectedEvent.startDate), 'MMM', { locale: ptBR })}</span>
+                      <span className="text-lg font-bold leading-none tracking-tighter">{format(new Date(selectedEvent.startDate), 'dd')}</span>
                    </div>
                    <div className="min-w-0">
-                     <h3 className="text-xl md:text-2xl font-bold text-white leading-tight tracking-tight mb-1 truncate">{selectedEvent.title}</h3>
-                     <p className="text-[9px] md:text-[10px] font-mono text-zinc-500 uppercase tracking-widest flex items-center gap-2 truncate"><Share2 size={10} className="text-zinc-600 shrink-0"/> ID: {selectedEvent.publicId}</p>
+                     <h3 className="text-xl font-bold text-white tracking-tight leading-none truncate">{selectedEvent.title}</h3>
+                     <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest flex items-center gap-2 mt-1 truncate">ID: {selectedEvent.publicId}</p>
                    </div>
                 </div>
                 <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-2 sm:pb-0">

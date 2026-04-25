@@ -38,34 +38,34 @@ export default function ConfirmModal({
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="relative w-full max-w-md bg-zinc-900 border border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden p-8 text-center"
+            className="relative w-full max-w-sm bg-zinc-950 border border-zinc-900 rounded-xl shadow-2xl overflow-hidden p-8 text-center"
           >
-            <div className={`w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl border ${
+            <div className={`w-14 h-14 rounded-lg flex items-center justify-center mx-auto mb-6 border ${
               variant === 'danger' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
             }`}>
-              <AlertTriangle size={40} />
+              <AlertTriangle size={24} />
             </div>
 
-            <h3 className="text-xl font-black text-white mb-3 tracking-tight uppercase">{title}</h3>
-            <p className="text-xs text-zinc-500 mb-10 leading-relaxed uppercase tracking-widest font-bold font-mono">
+            <h3 className="text-lg font-bold text-white mb-2 tracking-tight">{title}</h3>
+            <p className="text-[10px] text-zinc-500 mb-8 leading-relaxed font-bold uppercase tracking-widest px-4">
               {message}
             </p>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
               <button 
                 onClick={() => {
                   onConfirm();
                   onClose();
                 }}
-                className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] transition-all shadow-2xl active:scale-95 ${
-                  variant === 'danger' ? 'bg-red-500 text-white hover:bg-red-600 shadow-red-500/20' : 'bg-amber-500 text-white hover:bg-amber-600 shadow-amber-500/20'
+                className={`w-full py-2.5 rounded-lg font-bold text-[10px] uppercase tracking-widest transition-all ${
+                  variant === 'danger' ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-amber-500 text-white hover:bg-amber-600'
                 }`}
               >
                 {confirmLabel}
               </button>
               <button 
                 onClick={onClose}
-                className="w-full py-4 bg-white/5 text-zinc-500 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-white/10 hover:text-white transition-all"
+                className="w-full py-2.5 bg-zinc-900 text-zinc-500 rounded-lg font-bold text-[10px] uppercase tracking-widest hover:text-white transition-all"
               >
                 {cancelLabel}
               </button>

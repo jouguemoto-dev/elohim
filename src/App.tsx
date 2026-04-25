@@ -199,13 +199,13 @@ export default function App() {
         if (isMobile) setIsSidebarOpen(false);
       }}
       className={cn(
-        "flex items-center gap-4 w-full px-8 py-4 transition-all font-sans text-xs font-bold uppercase tracking-widest border-r-4 transition-all duration-300",
+        "flex items-center gap-3 w-full px-4 py-3 transition-all font-sans text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl",
         activePage === id 
-          ? "bg-white/5 text-white border-white shadow-[inset_0_0_20px_rgba(255,255,255,0.02)]" 
-          : "text-zinc-500 hover:bg-white/2 border-transparent hover:text-zinc-300"
+          ? "bg-white text-black shadow-lg" 
+          : "text-zinc-500 hover:text-white"
       )}
     >
-      <Icon size={16} className={cn("transition-transform duration-300", activePage === id && "scale-110")} />
+      <Icon size={14} />
       <span>{label}</span>
     </button>
   );
@@ -247,32 +247,32 @@ export default function App() {
       <motion.aside 
         initial={false}
         animate={{ 
-          width: isMobile ? (isSidebarOpen ? '80%' : 0) : (isSidebarOpen ? 280 : 0), 
+          width: isMobile ? (isSidebarOpen ? '80%' : 0) : (isSidebarOpen ? 260 : 0), 
           opacity: isSidebarOpen ? 1 : (isMobile ? 0 : 1),
           x: isMobile && !isSidebarOpen ? '-100%' : 0
         }}
         className={cn(
-          "bg-black/40 backdrop-blur-2xl border-r border-white/5 flex flex-col z-40 relative",
+          "bg-zinc-950 border-r border-zinc-900 flex flex-col z-40 relative",
           isMobile && "fixed inset-y-0 left-0"
         )}
       >
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="p-8 pb-10 border-b border-white/5">
+          <div className="p-8 pb-8">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white flex items-center justify-center shadow-2xl overflow-hidden border border-white/10 p-2">
+              <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center p-1.5">
                 {settings?.logoUrl ? (
-                  <img src={settings.logoUrl} className="w-full h-full object-cover rounded-lg" alt="Logo" referrerPolicy="no-referrer" />
+                  <img src={settings.logoUrl} className="w-full h-full object-cover rounded-sm" alt="Logo" referrerPolicy="no-referrer" />
                 ) : (
-                  <Users size={20} />
+                  <Users size={16} />
                 )}
               </div>
-              <span className="text-xl font-bold text-white truncate tracking-tight flex-1">
+              <span className="text-sm font-bold text-white truncate tracking-tight">
                 {settings?.name || 'Eclesia'}
               </span>
             </div>
           </div>
 
-          <nav className="flex-1 py-8">
+          <nav className="flex-1 px-4 space-y-1">
             <NavItem icon={BarChart3} label="Dashboard" id="dashboard" />
             <NavItem icon={Users} label="Membros" id="members" />
             <NavItem icon={Calendar} label="Eventos" id="events" />
@@ -281,44 +281,35 @@ export default function App() {
           </nav>
         </div>
 
-        <div className="mt-auto p-6 border-t border-white/5 bg-black/20">
-          <div className="flex items-center gap-4 mb-6 p-4 rounded-2xl bg-white/5 border border-white/5 shadow-2xl backdrop-blur-md">
+        <div className="mt-auto p-4 border-t border-zinc-900">
+          <div className="flex items-center gap-3 mb-4 p-3 rounded-xl bg-zinc-900/50">
             <img 
               src={user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}`} 
-              className="w-10 h-10 rounded-xl border border-white/10" 
+              className="w-8 h-8 rounded-lg" 
               alt={user.displayName || ''} 
             />
             <div className="flex-1 min-w-0">
-              <p className="text-[11px] font-bold text-white truncate">{user.displayName}</p>
-              <p className="text-[10px] text-zinc-500 truncate font-medium">{user.email}</p>
+              <p className="text-[10px] font-bold text-white truncate">{user.displayName}</p>
             </div>
+            <button onClick={logout} className="text-zinc-600 hover:text-white transition-colors">
+              <LogOut size={14} />
+            </button>
           </div>
-          <button 
-            onClick={logout}
-            className="flex items-center gap-3 w-full px-5 py-3 rounded-xl text-zinc-500 hover:text-red-400 hover:bg-red-500/10 transition-all font-bold text-[10px] uppercase tracking-widest"
-          >
-            <LogOut size={16} />
-            <span>Sair do Sistema</span>
-          </button>
         </div>
       </motion.aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-20 border-b border-white/5 bg-black/20 backdrop-blur-md flex items-center justify-between px-6 md:px-10 shrink-0 relative z-10">
-          <div className="flex items-center gap-4 md:gap-6">
+        <header className="h-16 border-b border-zinc-900 flex items-center justify-between px-6 md:px-10 shrink-0 relative z-10">
+          <div className="flex items-center gap-4 md:gap-8">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2.5 hover:bg-white/5 rounded-xl text-zinc-500 transition-colors"
+              className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 transition-colors"
             >
-              <Menu size={20} />
+              <Menu size={18} />
             </button>
-            <h2 className="text-[11px] font-bold text-zinc-400 uppercase tracking-[0.2em]">
-              {activePage === 'dashboard' ? 'Overview' : 
-               activePage === 'members' ? 'Membros' : 
-               activePage === 'events' ? 'Cronograma' :
-               activePage === 'registrations' ? 'Inscritos' :
-               'Ajustes'}
+            <h2 className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">
+              {activePage}
             </h2>
           </div>
           
