@@ -20,7 +20,8 @@ import {
   FileText,
   Download,
   Printer,
-  Upload
+  Upload,
+  Cake
 } from 'lucide-react';
 import { churchService } from '../services/churchService';
 import { Member } from '../types';
@@ -224,14 +225,31 @@ export default function MembersModule() {
     reader.readAsBinaryString(file);
   };
 
+  const isBirthdayNextWeek = (birthDate?: string) => {
+    if (!birthDate) return false;
+    const today = new Date();
+    const [year, month, day] = birthDate.split('-').map(Number);
+    const birth = new Date(today.getFullYear(), month - 1, day);
+    
+    // If birthday already happened this year, check next year
+    if (birth < today) {
+      birth.setFullYear(today.getFullYear() + 1);
+    }
+    
+    const diffTime = birth.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays >= 0 && diffDays <= 7;
+  };
+
   return (
     <div className="max-w-7xl mx-auto h-full flex flex-col space-y-6">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-4">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-1 tracking-tight">Membros</h2>
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em]">Base de dados central</p>
+           <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-1.5 block">Gestão Estratégica</span>
+           <h2 className="text-3xl font-display font-medium text-white tracking-tight">Membros</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
            <div className="relative">
             <input 
               type="file" 
@@ -270,36 +288,36 @@ export default function MembersModule() {
 
           <button 
             onClick={() => { setEditingMember(null); setIsModalOpen(true); }}
-            className="bg-white text-black px-4 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-lg active:scale-95"
+            className="bg-white text-black px-6 py-3 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-xl active:scale-95"
           >
-            <Plus size={14} />
-            <span>Novo Membro</span>
+            <Plus size={16} />
+            <span>Novo Registro</span>
           </button>
         </div>
       </header>
 
       {/* Filters */}
-      <div className="bg-zinc-950 p-4 rounded-xl border border-zinc-900 flex flex-col gap-4">
-        <div className="flex flex-col sm:flex-row gap-3 items-center">
-          <div className="relative flex-1 w-full flex items-center bg-zinc-900 px-3 py-2 rounded-lg border border-zinc-800 transition-all">
-            <Search className="text-zinc-600 mr-2" size={14} />
+      <div className="mx-4 bg-zinc-950 p-6 rounded-3xl border border-zinc-900/50 flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full flex items-center bg-transparent px-4 py-3 rounded-2xl border border-zinc-800 focus-within:border-white transition-all">
+            <Search className="text-zinc-600 mr-3" size={16} />
             <input 
               type="text" 
-              placeholder="Buscar..." 
-              className="bg-transparent border-none text-[10px] uppercase font-bold tracking-widest w-full outline-none text-white placeholder:text-zinc-700"
+              placeholder="PESQUISAR BASE..." 
+              className="bg-transparent border-none text-[10px] uppercase font-black tracking-[0.2em] w-full outline-none text-white placeholder:text-zinc-700"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center bg-zinc-900 rounded-lg p-1 border border-zinc-800">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center bg-zinc-900/50 rounded-2xl p-1 border border-zinc-800">
               {(['all', 'active', 'inactive'] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
                   className={cn(
-                    "px-3 py-1.5 rounded text-[9px] font-bold uppercase tracking-[0.1em] transition-all",
-                    statusFilter === s ? "bg-white text-black" : "text-zinc-600 hover:text-zinc-400"
+                    "px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all",
+                    statusFilter === s ? "bg-white text-black shadow-lg" : "text-zinc-600 hover:text-zinc-300"
                   )}
                 >
                   {s === 'all' ? 'Todos' : s === 'active' ? 'Ativos' : 'Inativos'}
@@ -388,60 +406,74 @@ export default function MembersModule() {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-hidden bg-zinc-950 border border-zinc-900 rounded-xl flex flex-col">
-        <div className="overflow-y-auto overflow-x-auto flex-1">
+      <div className="flex-1 overflow-hidden bg-black border border-zinc-900 rounded-[2.5rem] shadow-2xl flex flex-col mx-4">
+        <div className="overflow-y-auto flex-1">
           {loading ? (
-            <div className="h-40 flex items-center justify-center text-zinc-600 font-bold text-[10px] uppercase tracking-widest">Carregando...</div>
+            <div className="h-40 flex items-center justify-center text-zinc-700 font-black text-[10px] uppercase tracking-[0.3em] animate-pulse">Sincronizando Core...</div>
           ) : filteredMembers.length === 0 ? (
-            <div className="h-40 flex items-center justify-center text-zinc-600 font-bold text-[10px] uppercase tracking-widest italic">Vazio</div>
+            <div className="h-40 flex items-center justify-center text-zinc-800 font-black text-[10px] uppercase tracking-[0.3em] italic py-20">Nenhum registro localizado</div>
           ) : (
-            <table className="w-full text-left border-collapse">
+            <table className="w-full border-separate border-spacing-y-2 px-8">
               <thead>
-                <tr className="border-b border-zinc-900">
-                  <th className="px-6 py-4 text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Nome</th>
-                  <th className="hidden md:table-cell px-6 py-4 text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Contato</th>
-                  <th className="hidden sm:table-cell px-6 py-4 text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em]">Status</th>
-                  <th className="px-6 py-4 text-[9px] font-bold text-zinc-600 uppercase tracking-[0.2em] text-right">Ações</th>
+                <tr className="text-zinc-700">
+                  <th className="px-6 py-6 text-[9px] font-black uppercase tracking-[0.4em] text-left">Identificação</th>
+                  <th className="hidden md:table-cell px-6 py-6 text-[9px] font-black uppercase tracking-[0.4em] text-left">Contato</th>
+                  <th className="hidden sm:table-cell px-6 py-6 text-[9px] font-black uppercase tracking-[0.4em] text-center">Status</th>
+                  <th className="px-6 py-6 text-[9px] font-black uppercase tracking-[0.4em] text-right">Controles</th>
                 </tr>
               </thead>
-              <tbody className="text-[11px] divide-y divide-zinc-900">
+              <tbody className="text-sm">
                 {filteredMembers.map((member) => (
-                  <tr key={member.id} className="group hover:bg-zinc-900/30 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-zinc-900 flex items-center justify-center text-zinc-700 overflow-hidden shrink-0 border border-zinc-800">
-                          {member.photoUrl ? <img src={member.photoUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" /> : <Users size={14} />}
+                  <tr key={member.id} className="group">
+                    <td className="px-6 py-5 bg-zinc-900/30 rounded-l-3xl border-y border-l border-zinc-900/50 group-hover:bg-zinc-900/50 transition-all">
+                      <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 rounded-2xl bg-zinc-950 flex items-center justify-center text-zinc-700 overflow-hidden shrink-0 border border-white/5 shadow-inner group-hover:scale-105 transition-transform">
+                          {member.photoUrl ? (
+                            <img src={member.photoUrl} alt="" className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" referrerPolicy="no-referrer" />
+                          ) : (
+                            <span className="font-black text-xs">{member.name.substring(0, 2).toUpperCase()}</span>
+                          )}
                         </div>
                         <div>
-                          <p className="font-bold text-white transition-colors">{member.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-display font-medium text-zinc-100 group-hover:text-white transition-all text-base">{member.name}</p>
+                            {isBirthdayNextWeek(member.birthDate) && (
+                              <Cake size={14} className="text-amber-400 animate-bounce" title="Aniversário em breve!" />
+                            )}
+                          </div>
+                          <p className="text-[8px] text-zinc-700 font-black mt-1 tracking-[0.2em] uppercase">Membro Base</p>
                         </div>
                       </div>
                     </td>
-                    <td className="hidden md:table-cell px-6 py-4 text-zinc-500 font-mono tracking-tighter">
+                    <td className="hidden md:table-cell px-6 py-5 bg-zinc-900/30 border-y border-zinc-900/50 group-hover:bg-zinc-900/50 transition-all font-mono text-zinc-500 text-xs">
                       {member.phone}
                     </td>
-                    <td className="hidden sm:table-cell px-6 py-4">
+                    <td className="hidden sm:table-cell px-6 py-5 bg-zinc-900/30 border-y border-zinc-900/50 group-hover:bg-zinc-900/50 text-center transition-all">
                       <span className={cn(
-                        "text-[8px] font-bold uppercase px-2 py-0.5 rounded border flex items-center gap-2 w-fit",
-                        member.status === 'active' ? "bg-emerald-500/5 text-emerald-500 border-emerald-500/10" : "bg-zinc-900 text-zinc-600 border-zinc-800"
+                        "inline-flex items-center gap-2 px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all",
+                        member.status === 'active' 
+                          ? "bg-white/5 text-white border-white/10" 
+                          : "bg-zinc-950 text-zinc-700 border-zinc-900"
                       )}>
-                        <div className={cn("w-1 h-1 rounded-full", member.status === 'active' ? "bg-emerald-500" : "bg-zinc-700")} />
+                        <div className={cn("w-1 h-1 rounded-full", member.status === 'active' ? "bg-white animate-pulse" : "bg-zinc-800")} />
                         {member.status === 'active' ? 'Ativo' : 'Inativo'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
+                    <td className="px-6 py-5 bg-zinc-900/30 rounded-r-3xl border-y border-r border-zinc-900/50 group-hover:bg-zinc-900/50 text-right transition-all">
+                      <div className="flex items-center justify-end gap-2">
                         <button 
                            onClick={() => { setEditingMember(member); setIsModalOpen(true); }}
-                           className="p-1.5 text-zinc-600 hover:text-white transition-all"
+                           className="p-3 text-zinc-600 hover:text-white hover:bg-white/5 rounded-2xl transition-all"
+                           title="Editar Perfil"
                         >
-                          <Edit2 size={14} />
+                          <Edit2 size={16} />
                         </button>
                         <button 
                           onClick={() => setConfirmModal({ isOpen: true, id: member.id!, name: member.name })}
-                          className="p-1.5 text-zinc-700 hover:text-red-500 transition-all font-bold"
+                          className="p-3 text-zinc-800 hover:text-red-400 hover:bg-red-500/10 rounded-2xl transition-all"
+                          title="Remover Registro"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
@@ -451,8 +483,8 @@ export default function MembersModule() {
             </table>
           )}
         </div>
-        <div className="px-6 py-3 border-t border-zinc-900 flex justify-between items-center text-[9px] text-zinc-600 font-bold uppercase tracking-[0.2em]">
-          {filteredMembers.length} registros
+        <div className="px-10 py-5 border-t border-white/5 flex justify-between items-center text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em] bg-white/[0.02]">
+          {filteredMembers.length} registros no sistema
         </div>
       </div>
 

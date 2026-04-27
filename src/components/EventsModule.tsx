@@ -21,7 +21,9 @@ import {
   Search,
   Clock,
   Printer,
-  QrCode
+  QrCode,
+  ChevronDown,
+  Banknote
 } from 'lucide-react';
 import { churchService } from '../services/churchService';
 import { ChurchEvent, Registration, EventType, EventTemplate, ChurchSettings } from '../types';
@@ -52,6 +54,7 @@ export default function EventsModule() {
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const [editingEvent, setEditingEvent] = useState<ChurchEvent | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'registrations'>('details');
+  const [paymentMenuId, setPaymentMenuId] = useState<string | null>(null);
   const [eventAttachments, setEventAttachments] = useState<Attachment[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [eventTemplates, setEventTemplates] = useState<EventTemplate[]>([]);
@@ -236,11 +239,18 @@ export default function EventsModule() {
     setIsTemplateModalOpen(false);
   };
 
-  const handleTogglePayment = async (reg: Registration) => {
-    const newStatus = reg.status === 'paid' ? 'pending' : 'paid';
-    const amount = newStatus === 'paid' ? (selectedEvent?.price || 0) : 0;
-    await churchService.updateRegistration(reg.id!, { status: newStatus, amountPaid: amount });
-    loadRegistrations(selectedEvent!.id!);
+  const handleTogglePayment = async (reg: Registration, method?: 'pix' | 'cash' | 'card') => {
+    const newStatus = reg.status === 'paid' && !method ? 'pending' : 'paid';
+    const amount = newStatus === 'paid' ? (reg.amountPaid || selectedEvent?.price || 0) : 0;
+    
+    await churchService.updateRegistration(reg.id!, { 
+      status: newStatus, 
+      amountPaid: amount,
+      paymentMethod: method || (newStatus === 'paid' ? (reg.paymentMethod || 'pix') : undefined)
+    });
+    
+    if (selectedEvent) loadRegistrations(selectedEvent.id!);
+    setPaymentMenuId(null);
   };
 
   const handleUpdateAmount = async (regId: string, amount: number) => {
@@ -367,27 +377,27 @@ export default function EventsModule() {
 
   return (
     <div className="max-w-7xl mx-auto h-full flex flex-col space-y-6">
-      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-2">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 px-4">
         <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight mb-1">Agenda</h2>
-          <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.3em]">Cronograma e logistica</p>
+           <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-1.5 block">Logística & Estratégia</span>
+           <h2 className="text-3xl font-display font-medium text-white tracking-tight">Agenda</h2>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-3">
           <button 
             onClick={exportEventListExcel}
-            className="group bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
+            className="group bg-zinc-950/50 border border-zinc-900/50 text-zinc-600 px-4 py-3 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all shadow-sm"
             title="Exportar Excel"
           >
-            <FileSpreadsheet size={14} />
+            <FileSpreadsheet size={16} />
             <span className="hidden lg:inline">Excel</span>
           </button>
           
           <button 
             onClick={exportEventListPDF}
-            className="group bg-zinc-900 border border-zinc-800 text-zinc-500 px-3 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-all shadow-sm"
+            className="group bg-zinc-950/50 border border-zinc-900/50 text-zinc-600 px-4 py-3 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all shadow-sm"
             title="Relatório PDF"
           >
-            <Printer size={14} />
+            <Printer size={16} />
             <span className="hidden lg:inline">PDF</span>
           </button>
 
@@ -397,9 +407,9 @@ export default function EventsModule() {
               setTemplateRevision(0);
               setIsEventModalOpen(true); 
             }}
-            className="bg-white text-black px-4 py-2 rounded-lg flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-lg"
+            className="bg-white text-black px-6 py-3 rounded-2xl flex items-center gap-3 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-xl active:scale-95"
           >
-            <Plus size={14} />
+            <Plus size={16} />
             <span>Novo Projeto</span>
           </button>
         </div>
@@ -408,34 +418,34 @@ export default function EventsModule() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 flex-1 min-h-0">
         {/* Events List Sidebar */}
         <div className={cn(
-          "lg:col-span-1 flex flex-col min-h-0 bg-zinc-950 border border-zinc-900 rounded-xl overflow-hidden transition-all",
+          "lg:col-span-1 flex flex-col min-h-0 bg-black border border-zinc-900 rounded-[2rem] overflow-hidden transition-all mx-4 lg:mx-0 shadow-2xl",
           mobileView === 'detail' && "hidden lg:flex"
         )}>
-           <div className="p-4 border-b border-zinc-900 bg-white/[0.01]">
-             <h3 className="text-[9px] font-bold text-zinc-600 uppercase tracking-[0.3em]">Programação</h3>
+           <div className="px-6 py-5 border-b border-zinc-900/50 bg-zinc-950/50">
+             <h3 className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.4em]">Agenda Cronológica</h3>
            </div>
-           <div className="flex-1 overflow-y-auto divide-y divide-zinc-900 px-1">
+           <div className="flex-1 overflow-y-auto divide-y divide-zinc-900/30 px-2 pt-2">
              {events.length === 0 ? (
-               <div className="p-8 text-center text-zinc-700 font-bold text-[9px] uppercase tracking-widest italic py-12">Sem eventos</div>
+               <div className="p-8 text-center text-zinc-800 font-black text-[9px] uppercase tracking-[0.3em] italic py-12 px-10">Agenda limpa no momento</div>
              ) : events.map(event => (
                <button
                  key={event.id}
                  onClick={() => { setSelectedEvent(event); setMobileView('detail'); }}
                  className={cn(
-                   "w-full text-left p-4 transition-all flex items-start justify-between rounded-lg mx-1 my-0.5 group",
-                   selectedEvent?.id === event.id ? "bg-zinc-900" : "hover:bg-zinc-900/50"
+                   "w-full text-left p-4 transition-all flex items-start justify-between rounded-2xl mx-0 my-1 group",
+                   selectedEvent?.id === event.id ? "bg-zinc-900/50 border border-white/5" : "hover:bg-zinc-900/20 border border-transparent"
                  )}
                >
                  <div className="flex-1 min-w-0 pr-2">
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-2">
                        <div className="flex items-center gap-3">
-                          <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 bg-zinc-800 rounded border border-zinc-700 text-zinc-500 group-hover:text-white transition-colors">{event.type}</span>
-                          <span className="text-[9px] font-mono text-zinc-700 tracking-tighter">{format(new Date(event.startDate), 'dd/MM/yy')}</span>
+                          <span className="text-[7px] font-black uppercase tracking-widest px-2 py-0.5 bg-zinc-950 rounded-lg border border-zinc-800 text-zinc-700 group-hover:text-zinc-300 transition-colors">{event.type}</span>
+                          <span className="text-[8px] font-mono text-zinc-800 tracking-tighter group-hover:text-zinc-500">{format(new Date(event.startDate), 'dd MMM')}</span>
                        </div>
                     </div>
-                    <h4 className="text-xs font-bold text-white group-hover:translate-x-1 transition-transform truncate">{event.title}</h4>
+                    <h4 className="text-[11px] font-display font-medium text-zinc-400 group-hover:text-white transition-all truncate">{event.title}</h4>
                  </div>
-                 <ChevronRight size={14} className={cn(
+                 <ChevronRight size={12} className={cn(
                    "transition-all self-center",
                    selectedEvent?.id === event.id ? "text-white translate-x-1" : "text-zinc-800 opacity-0 group-hover:opacity-100"
                  )} />
@@ -446,33 +456,34 @@ export default function EventsModule() {
 
         {/* Event Detail / Registrations */}
         <div className={cn(
-          "lg:col-span-3 flex flex-col min-h-0 bg-zinc-950 border border-zinc-900 rounded-xl overflow-hidden transition-all",
+          "lg:col-span-3 flex flex-col min-h-0 bg-black border border-zinc-900 rounded-[2.5rem] overflow-hidden transition-all mx-4 lg:mx-0 shadow-2xl",
           mobileView === 'list' && "hidden lg:flex"
         )}>
           {!selectedEvent ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-zinc-700 p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-zinc-900 flex items-center justify-center mb-4">
-                <Calendar size={32} className="opacity-20 text-white" />
+            <div className="flex-1 flex flex-col items-center justify-center text-zinc-800 p-12 text-center">
+              <div className="w-24 h-24 rounded-[2rem] bg-zinc-950 flex items-center justify-center mb-6 shadow-inner border border-zinc-900">
+                <Calendar size={40} className="opacity-20 text-white" />
               </div>
-              <p className="font-bold text-zinc-700 text-[9px] uppercase tracking-[0.2em]">Selecione um projeto</p>
+              <p className="font-black text-zinc-800 text-[10px] uppercase tracking-[0.4em]">Selecione um projeto para detalhamento</p>
             </div>
           ) : (
             <div className="flex flex-col h-full">
-              <header className="p-6 border-b border-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between bg-white/[0.01] gap-6">
-                <div className="flex items-center gap-5">
+              <header className="px-8 py-8 border-b border-zinc-900/50 flex flex-col sm:flex-row sm:items-center justify-between bg-zinc-950/50 gap-6">
+                <div className="flex items-center gap-6">
                    <button 
                      onClick={() => setMobileView('list')}
-                     className="p-2 bg-zinc-900 text-zinc-500 rounded-lg lg:hidden"
+                     className="p-3 bg-zinc-900 text-zinc-600 rounded-2xl lg:hidden"
                    >
-                     <ChevronRight className="rotate-180" size={16} />
+                     <ChevronRight className="rotate-180" size={18} />
                    </button>
-                   <div className="bg-white text-black h-12 w-12 rounded-lg flex flex-col items-center justify-center shadow-lg shrink-0">
-                      <span className="text-[8px] font-bold leading-none mb-1 uppercase tracking-tighter">{format(new Date(selectedEvent.startDate), 'MMM', { locale: ptBR })}</span>
-                      <span className="text-lg font-bold leading-none tracking-tighter">{format(new Date(selectedEvent.startDate), 'dd')}</span>
+                   <div className="bg-white text-black h-16 w-16 rounded-2xl flex flex-col items-center justify-center shadow-xl shrink-0">
+                      <span className="text-[9px] font-black leading-none mb-1.5 uppercase tracking-widest">{format(new Date(selectedEvent.startDate), 'MMM', { locale: ptBR })}</span>
+                      <span className="text-2xl font-display font-medium leading-none tracking-tighter">{format(new Date(selectedEvent.startDate), 'dd')}</span>
                    </div>
                    <div className="min-w-0">
-                     <h3 className="text-xl font-bold text-white tracking-tight leading-none truncate">{selectedEvent.title}</h3>
-                     <p className="text-[9px] font-mono text-zinc-600 uppercase tracking-widest flex items-center gap-2 mt-1 truncate">ID: {selectedEvent.publicId}</p>
+                      <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-1 block">Projeto Selecionado</span>
+                      <h3 className="text-2xl font-display font-medium text-white tracking-tight leading-none truncate">{selectedEvent.title}</h3>
+                      <p className="text-[9px] font-mono text-zinc-700 tracking-widest flex items-center gap-2 mt-2 truncate">LOG_ID: {selectedEvent.publicId}</p>
                    </div>
                 </div>
                 <div className="flex items-center gap-2 md:gap-3 overflow-x-auto pb-2 sm:pb-0">
@@ -714,18 +725,56 @@ export default function EventsModule() {
                                   </div>
 
                                   <div className="flex items-center gap-3">
-                                    <button 
-                                      onClick={() => handleTogglePayment(reg)}
-                                      className={cn(
-                                        "px-6 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl flex items-center gap-2 active:scale-95",
-                                        reg.status === 'paid' 
-                                          ? "bg-emerald-500 text-black hover:bg-emerald-400" 
-                                          : "bg-white/5 text-zinc-500 border border-white/10 hover:bg-white/10 hover:text-white"
-                                      )}
-                                    >
-                                      {reg.status === 'paid' ? <CheckCircle2 size={16} /> : <Clock size={16} />}
-                                      {reg.status === 'paid' ? 'Liquidado' : 'Aguardando'}
-                                    </button>
+                                    <div className="relative">
+                                      <button 
+                                        onClick={() => {
+                                          if (reg.status === 'paid') {
+                                            handleTogglePayment(reg);
+                                          } else {
+                                            setPaymentMenuId(paymentMenuId === reg.id ? null : (reg.id || null));
+                                          }
+                                        }}
+                                        className={cn(
+                                          "px-6 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all shadow-2xl flex items-center gap-2 active:scale-95",
+                                          reg.status === 'paid' 
+                                            ? "bg-emerald-500 text-black hover:bg-emerald-400" 
+                                            : "bg-white/5 text-zinc-500 border border-white/10 hover:bg-white/10 hover:text-white"
+                                        )}
+                                      >
+                                        {reg.status === 'paid' ? <CheckCircle2 size={16} /> : <Clock size={16} />}
+                                        {reg.status === 'paid' ? 'Liquidado' : 'Aguardando'}
+                                        {reg.status === 'pending' && <ChevronDown size={14} className={cn("transition-transform", paymentMenuId === reg.id && "rotate-180")} />}
+                                      </button>
+
+                                      <AnimatePresence>
+                                        {paymentMenuId === reg.id && (
+                                          <motion.div 
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute bottom-full mb-3 right-0 z-50 bg-zinc-900 border border-white/10 rounded-[1.5rem] shadow-2xl p-2 min-w-[160px] flex flex-col gap-1.5"
+                                          >
+                                            <p className="text-[7px] font-black text-zinc-600 uppercase tracking-widest p-3 border-b border-white/5 mb-1.5">Meio de Liquidação</p>
+                                            {[
+                                              { id: 'pix', label: 'PIX', icon: Search, color: 'text-emerald-400 bg-emerald-400/10' },
+                                              { id: 'cash', label: 'Dinheiro', icon: Banknote, color: 'text-amber-400 bg-amber-400/10' },
+                                              { id: 'card', label: 'Cartão', icon: CreditCard, color: 'text-blue-400 bg-blue-400/10' }
+                                            ].map((method) => (
+                                              <button
+                                                key={method.id}
+                                                onClick={() => handleTogglePayment(reg, method.id as any)}
+                                                className="flex items-center gap-4 px-4 py-3 hover:bg-white/5 rounded-2xl transition-all group/item"
+                                              >
+                                                <div className={cn("p-2 rounded-xl", method.color)}>
+                                                  <method.icon size={14} />
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover/item:text-white">{method.label}</span>
+                                              </button>
+                                            ))}
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
                                     
                                     <button 
                                       onClick={() => setConfirmModal({ isOpen: true, id: reg.id!, type: 'registration' })}

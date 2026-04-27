@@ -34,9 +34,17 @@ service cloud.firestore {
              data.status in ['pending', 'paid'] &&
              (!('isMember' in data) || data.isMember is bool) &&
              (!('cpf' in data) || data.cpf is string) &&
-             (!('address' in data) || (data.address is string && data.address.size() <= 500)) &&
+             (!('address' in data) || data.address is string) &&
              (!('birthDate' in data) || data.birthDate is string) &&
-             (!('isMinor' in data) || data.isMinor is bool);
+             (!('isMinor' in data) || data.isMinor is bool) &&
+             (!('amountPaid' in data) || data.amountPaid is number) &&
+             (!('registeredAt' in data) || data.registeredAt is string) &&
+             (!('memberId' in data) || data.memberId is string) &&
+             (!('bloodType' in data) || data.bloodType is string) &&
+             (!('allergies' in data) || data.allergies is string) &&
+             (!('observations' in data) || data.observations is string) &&
+             (!('emergencyContacts' in data) || data.emergencyContacts is map) &&
+             (!('guardianAuthorization' in data) || data.guardianAuthorization is map);
     }
 
     // Settings Validation

@@ -99,13 +99,13 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     <motion.div 
       whileHover={{ y: -2 }}
       onClick={onClick}
-      className="bg-zinc-900/50 p-5 rounded-xl border border-zinc-800 flex flex-col justify-between cursor-pointer group transition-all hover:border-zinc-700"
+      className="bg-black p-6 rounded-3xl border border-zinc-900 flex flex-col justify-between cursor-pointer group transition-all hover:border-zinc-700"
     >
       <div className="flex-1 min-w-0">
-        <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-[0.2em] mb-3">{title}</p>
+        <p className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.3em] mb-4">{title}</p>
         <div className="flex items-baseline gap-2">
-          <h3 className="text-2xl font-bold text-white tracking-tight truncate">{value}</h3>
-          {subtitle && <span className="hidden sm:inline text-[9px] text-emerald-500 font-bold tracking-tight">{subtitle}</span>}
+          <h3 className="text-3xl font-display font-medium text-white tracking-tight truncate">{value}</h3>
+          {subtitle && <span className="hidden sm:inline text-[9px] text-zinc-500 font-bold tracking-tight">{subtitle}</span>}
         </div>
       </div>
     </motion.div>
@@ -118,44 +118,40 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
   );
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 px-2 pb-10">
-      {/* Birthday Alerts Banner */}
+    <div className="h-full overflow-y-auto">
+      <div className="max-w-7xl mx-auto space-y-8 px-2 pb-10 pt-2">
+        {/* Birthday Alerts Banner */}
       {stats.birthdayMembers.length > 0 && (
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-emerald-500/5 border border-emerald-500/10 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-6"
+          className="bg-zinc-950 border border-zinc-900/50 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6"
         >
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-500/10 rounded-xl text-emerald-500">
-              <Cake size={24} />
+          <div className="flex items-center gap-6">
+            <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-zinc-500">
+              <Cake size={28} />
             </div>
             <div>
-              <h4 className="text-white font-bold text-lg tracking-tight">Aniversariantes</h4>
-              <p className="text-emerald-500/60 text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5">
+              <h4 className="text-white font-display font-medium text-xl tracking-tight leading-tight">Aniversariantes</h4>
+              <p className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.3em] mt-1.5">
                 {stats.birthdayMembers.length} {stats.birthdayMembers.length === 1 ? 'membro' : 'membros'} esta semana
               </p>
             </div>
           </div>
-          <div className="flex -space-x-3 overflow-hidden">
+          <div className="flex -space-x-4 overflow-hidden">
             {stats.birthdayMembers.slice(0, 5).map((member, index) => (
               <div 
                 key={member.id} 
-                className="w-12 h-12 rounded-2xl border-4 border-[#050505] bg-zinc-800 flex items-center justify-center text-sm font-black text-emerald-400 overflow-hidden shadow-2xl transition-transform hover:translate-y-[-4px] cursor-help"
+                className="w-14 h-14 rounded-2xl border-4 border-black bg-zinc-900 flex items-center justify-center text-sm font-black text-white/50 overflow-hidden shadow-xl transition-transform hover:translate-y-[-4px] cursor-help"
                 title={`${member.name} - ${format(new Date(member.birthDate!), 'dd/MM')}`}
               >
                 {member.photoUrl ? (
-                  <img src={member.photoUrl} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                  <img src={member.photoUrl} className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all" alt="" referrerPolicy="no-referrer" />
                 ) : (
                   member.name.charAt(0)
                 )}
               </div>
             ))}
-            {stats.birthdayMembers.length > 5 && (
-              <div className="w-12 h-12 rounded-2xl border-4 border-[#050505] bg-zinc-800 flex items-center justify-center text-[10px] font-black text-zinc-400 shadow-2xl">
-                +{stats.birthdayMembers.length - 5}
-              </div>
-            )}
           </div>
         </motion.div>
       )}
@@ -199,114 +195,96 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Recent Members */}
-        <div className="bg-zinc-950 rounded-xl border border-zinc-900 overflow-hidden flex flex-col h-[480px]">
-          <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between">
-            <h3 className="font-bold text-[10px] text-zinc-500 uppercase tracking-[0.2em]">Recém Integrados</h3>
+        <div className="bg-black rounded-3xl border border-zinc-900 overflow-hidden flex flex-col h-[520px]">
+          <div className="px-8 py-6 border-b border-zinc-900/50 flex items-center justify-between bg-zinc-950/50">
+            <div>
+               <h3 className="font-display font-medium text-white tracking-tight">Membros Recentes</h3>
+               <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.4em] mt-1 block">Fluxo de Registro</span>
+            </div>
             <button 
               onClick={() => onNavigate('members')}
-              className="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-[0.2em]"
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase tracking-widest border border-white/5"
             >
               Base Completa
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-zinc-900 px-2">
+          <div className="flex-1 overflow-y-auto divide-y divide-zinc-900 px-4 py-2">
             {stats.recentMembers.length > 0 ? stats.recentMembers.map((member) => {
               const isBirthdaySoon = stats.birthdayMembers.some(bm => bm.id === member.id);
-              const isToday = member.birthDate && 
-                new Date(member.birthDate).getDate() === new Date().getDate() && 
-                new Date(member.birthDate).getMonth() === new Date().getMonth();
-
               return (
                 <div 
                   key={member.id} 
                   className={cn(
-                    "p-5 flex items-center gap-5 hover:bg-white/[0.03] transition-all cursor-pointer group rounded-2xl mx-2 my-1",
-                    isBirthdaySoon && "bg-emerald-500/5 border border-emerald-500/10"
+                    "p-6 flex items-center gap-6 hover:bg-zinc-900/50 transition-all cursor-pointer group rounded-3xl mb-1",
+                    isBirthdaySoon && "bg-white/[0.02]"
                   )}
                 >
-                  <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-500 overflow-hidden shrink-0 group-hover:bg-zinc-700 transition-all border border-white/5">
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center text-zinc-600 overflow-hidden shrink-0 group-hover:scale-105 transition-all border border-white/5">
                     {member.photoUrl ? (
-                      <img src={member.photoUrl} className="w-full h-full object-cover" alt="" referrerPolicy="no-referrer" />
+                      <img src={member.photoUrl} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt="" referrerPolicy="no-referrer" />
                     ) : (
-                      <Users size={18} />
+                      <Users size={20} />
                     )}
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-white group-hover:translate-x-1 transition-transform">{member.name}</p>
-                      {isBirthdaySoon && (
-                        <motion.div 
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className={cn(
-                            "px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1",
-                            isToday ? "bg-emerald-500 text-black" : "bg-emerald-500/20 text-emerald-400"
-                          )}
-                        >
-                          <Cake size={10} />
-                          {isToday ? "Hoje!" : "Esta semana"}
-                        </motion.div>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-3 mt-1">
-                      <p className="text-[10px] text-zinc-500 font-mono tracking-tighter">{member.phone}</p>
-                      {member.birthDate && (
-                        <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-tight flex items-center gap-1">
-                          • {format(new Date(member.birthDate), 'dd MMM', { locale: ptBR })}
-                        </p>
-                      )}
-                    </div>
+                    <p className="text-sm font-display font-medium text-zinc-100 group-hover:text-white transition-colors">{member.name}</p>
+                    <p className="text-[10px] text-zinc-600 font-mono tracking-tighter mt-1">{member.phone}</p>
                   </div>
-                  <div className={cn(
-                    "text-[9px] font-bold uppercase py-1 px-3 rounded-lg flex items-center gap-2",
-                    member.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-zinc-800 text-zinc-500'
-                  )}>
-                    <div className={cn("w-1 h-1 rounded-full", member.status === 'active' ? "bg-emerald-400 animate-pulse" : "bg-zinc-500")} />
-                    {member.status === 'active' ? 'Ligado' : 'Off'}
+                  <div className="text-right">
+                     <p className={cn(
+                        "text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border",
+                        member.status === 'active' ? "border-emerald-500/20 text-emerald-500 bg-emerald-500/5" : "border-zinc-800 text-zinc-600"
+                     )}>
+                        {member.status === 'active' ? 'Ativo' : 'Inativo'}
+                     </p>
                   </div>
                 </div>
               );
             }) : (
-              <div className="flex-1 flex items-center justify-center text-zinc-600 text-[10px] font-bold uppercase tracking-widest italic py-12">Nenhum registro recente</div>
+              <div className="flex-1 flex items-center justify-center text-zinc-600 text-[10px] font-black uppercase tracking-widest italic py-12">Sem registros</div>
             )}
           </div>
         </div>
 
         {/* Upcoming Events */}
-        <div className="bg-zinc-950 rounded-xl border border-zinc-900 overflow-hidden flex flex-col h-[480px]">
-          <div className="px-6 py-4 border-b border-zinc-900 flex items-center justify-between">
-            <h3 className="font-bold text-[10px] text-zinc-500 uppercase tracking-[0.2em]">Próximos Eventos</h3>
+        <div className="bg-black rounded-3xl border border-zinc-900 overflow-hidden flex flex-col h-[520px]">
+          <div className="px-8 py-6 border-b border-zinc-900/50 flex items-center justify-between bg-zinc-950/50">
+            <div>
+               <h3 className="font-display font-medium text-white tracking-tight">Agenda Próxima</h3>
+               <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.4em] mt-1 block">Missão e Visão</span>
+            </div>
             <button 
               onClick={() => onNavigate('events')}
-              className="text-[9px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-[0.2em]"
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase tracking-widest border border-white/5"
             >
               Ver Tudo
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
             {stats.upcomingEvents.length > 0 ? stats.upcomingEvents.map((event) => (
-              <div key={event.id} className="flex gap-4 p-4 rounded-lg border border-transparent hover:border-zinc-800 hover:bg-zinc-900/50 transition-all group">
-                <div className="shrink-0 w-10 h-10 flex flex-col items-center justify-center bg-zinc-900 text-zinc-500 rounded border border-zinc-800">
-                  <span className="text-[8px] font-bold uppercase leading-none mb-1">{format(new Date(event.startDate), 'MMM', { locale: ptBR })}</span>
-                  <span className="text-sm font-bold text-white leading-none">{format(new Date(event.startDate), 'dd')}</span>
+              <div key={event.id} className="flex gap-6 p-6 rounded-3xl border border-zinc-900 hover:border-zinc-700 bg-zinc-950/30 transition-all group cursor-pointer" onClick={() => onNavigate('events')}>
+                <div className="shrink-0 w-14 h-14 flex flex-col items-center justify-center bg-zinc-900 border border-white/5 rounded-2xl group-hover:bg-white/5 transition-colors">
+                  <span className="text-[9px] font-black uppercase text-zinc-600 leading-none mb-1.5">{format(new Date(event.startDate), 'MMM', { locale: ptBR })}</span>
+                  <span className="text-xl font-display font-medium text-white leading-none">{format(new Date(event.startDate), 'dd')}</span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-xs font-bold text-white truncate mb-1">{event.title}</h4>
-                  <div className="flex items-center gap-3 text-[9px] text-zinc-500 font-medium">
-                    <span className="flex items-center gap-1"><Clock size={10} className="text-zinc-700" /> {format(new Date(event.startDate), 'HH:mm')}</span>
-                    <span className="truncate flex items-center gap-1"><MapPin size={10} className="text-zinc-700" /> {event.location}</span>
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <h4 className="text-sm font-display font-medium text-zinc-100 group-hover:text-white transition-colors truncate mb-1.5">{event.title}</h4>
+                  <div className="flex items-center gap-4 text-[9px] text-zinc-600 font-bold uppercase tracking-widest">
+                    <span className="flex items-center gap-1.5"><Clock size={10} /> {format(new Date(event.startDate), 'HH:mm')}</span>
+                    <span className="truncate flex items-center gap-1.5"><MapPin size={10} /> {event.location}</span>
                   </div>
                 </div>
-                <div className="self-center text-zinc-700 group-hover:text-zinc-500 transition-colors">
-                   <ArrowRight size={14} />
+                <div className="self-center p-2 rounded-full border border-zinc-900 group-hover:border-zinc-700 transition-all">
+                   <ArrowRight size={14} className="text-zinc-700 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
                 </div>
               </div>
             )) : (
-              <div className="flex-1 flex items-center justify-center text-zinc-700 text-[9px] font-bold uppercase tracking-widest italic">Agenda vazia</div>
+              <div className="flex-1 flex items-center justify-center text-zinc-600 text-[10px] font-black uppercase tracking-widest italic py-12">Agenda limpa</div>
             )}
           </div>
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

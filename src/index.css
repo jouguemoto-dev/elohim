@@ -1,16 +1,24 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Inter", ui-sans-serif, system-ui, sans-serif; /* High Density uses primary sans even for display */
+  --font-display: "Space Grotesk", sans-serif;
 }
 
 @layer base {
   body {
-    @apply text-slate-200 antialiased;
-    background-color: #030303;
-    background-image: radial-gradient(circle at 50% 0%, #0a0a0a 0%, #030303 100%);
-    background-attachment: fixed;
+    @apply text-zinc-100 antialiased selection:bg-white selection:text-black;
+    background-color: #000000;
+  }
+}
+
+@layer components {
+  .minimal-card {
+    @apply bg-zinc-950 border border-zinc-900/50 rounded-3xl p-6 transition-all;
+  }
+  
+  .minimal-input {
+    @apply bg-transparent border-b border-zinc-800 focus:border-white outline-none py-2 transition-all font-sans;
   }
 }

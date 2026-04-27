@@ -72,6 +72,8 @@ export default function App() {
         setLoginError("O popup de login foi bloqueado pelo seu navegador. Por favor, autorize popups ou abra o app em uma nova aba.");
       } else if (error.code === 'auth/popup-closed-by-user') {
         setLoginError("O login foi cancelado.");
+      } else if (error.code === 'auth/unauthorized-domain') {
+        setLoginError("Este domínio não está autorizado no Firebase. Acesse o Console do Firebase, vá em Autenticação > Configurações > Domínios Autorizados e adicione o domínio atual.");
       } else {
         setLoginError("Erro ao fazer login: " + (error.message || "Tente abrir em uma nova aba."));
       }
@@ -193,20 +195,25 @@ export default function App() {
   }
 
   const NavItem = ({ icon: Icon, label, id }: { icon: any, label: string, id: Page }) => (
-    <button
+      <button
       onClick={() => {
         setActivePage(id);
         if (isMobile) setIsSidebarOpen(false);
       }}
       className={cn(
-        "flex items-center gap-3 w-full px-4 py-3 transition-all font-sans text-[10px] font-bold uppercase tracking-[0.2em] rounded-xl",
+        "flex items-center justify-between w-full px-6 py-3 transition-all font-sans text-[10px] font-bold uppercase tracking-[0.2em] group relative",
         activePage === id 
-          ? "bg-white text-black shadow-lg" 
-          : "text-zinc-500 hover:text-white"
+          ? "text-white" 
+          : "text-zinc-600 hover:text-zinc-300"
       )}
     >
-      <Icon size={14} />
-      <span>{label}</span>
+      <div className="flex items-center gap-4">
+        <Icon size={14} className={cn("transition-transform", activePage === id && "scale-110")} />
+        <span>{label}</span>
+      </div>
+      {activePage === id && (
+         <motion.div layoutId="nav-pill" className="absolute left-0 w-1 h-4 bg-white rounded-r-full" />
+      )}
     </button>
   );
 
@@ -229,7 +236,7 @@ export default function App() {
   );
 
   return (
-    <div className="h-screen flex bg-transparent overflow-hidden font-sans selection:bg-white selection:text-black relative">
+    <div className="h-screen flex bg-black overflow-hidden font-sans selection:bg-white selection:text-black relative">
       {/* Mobile Drawer Overlay */}
       <AnimatePresence>
         {isMobile && isSidebarOpen && (
@@ -252,23 +259,26 @@ export default function App() {
           x: isMobile && !isSidebarOpen ? '-100%' : 0
         }}
         className={cn(
-          "bg-zinc-950 border-r border-zinc-900 flex flex-col z-40 relative",
+          "bg-black border-r border-zinc-900/50 flex flex-col z-40 relative",
           isMobile && "fixed inset-y-0 left-0"
         )}
       >
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="p-8 pb-8">
+          <div className="p-10 pb-8">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-white text-black flex items-center justify-center p-1.5">
+              <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 text-white flex items-center justify-center p-2 shadow-inner">
                 {settings?.logoUrl ? (
-                  <img src={settings.logoUrl} className="w-full h-full object-cover rounded-sm" alt="Logo" referrerPolicy="no-referrer" />
+                  <img src={settings.logoUrl} className="w-full h-full object-cover rounded-lg" alt="Logo" referrerPolicy="no-referrer" />
                 ) : (
-                  <Users size={16} />
+                  <Users size={20} />
                 )}
               </div>
-              <span className="text-sm font-bold text-white truncate tracking-tight">
-                {settings?.name || 'Eclesia'}
-              </span>
+              <div className="flex flex-col">
+                <span className="text-base font-display font-medium text-white truncate tracking-tight">
+                  {settings?.name || 'Eclesia'}
+                </span>
+                <span className="text-[8px] font-black uppercase tracking-[0.4em] text-zinc-600">Manager</span>
+              </div>
             </div>
           </div>
 
@@ -300,29 +310,32 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-16 border-b border-zinc-900 flex items-center justify-between px-6 md:px-10 shrink-0 relative z-10">
-          <div className="flex items-center gap-4 md:gap-8">
+        <header className="h-20 flex items-center justify-between px-6 md:px-12 shrink-0 relative z-10">
+          <div className="flex items-center gap-8">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 transition-colors"
+              className="p-3 bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 rounded-2xl text-zinc-500 transition-colors shadow-sm"
             >
               <Menu size={18} />
             </button>
-            <h2 className="text-[10px] font-bold text-white uppercase tracking-[0.3em]">
-              {activePage}
-            </h2>
+            <div>
+               <h2 className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.5em]">
+                 Sistema de Gestão
+               </h2>
+               <p className="text-lg font-display font-medium text-white tracking-tight capitalize">{activePage}</p>
+            </div>
           </div>
           
           <div className="flex items-center gap-6">
              <div className="text-right hidden sm:block">
-               <p className="text-[9px] uppercase tracking-[0.3em] text-zinc-600 font-bold">Relatório Ativo</p>
-               <p className="text-xs font-mono font-medium text-white/80">CORE v1.2.4</p>
+               <p className="text-[9px] uppercase tracking-[0.4em] text-zinc-700 font-black">Infra Estrutura</p>
+               <p className="text-[10px] font-mono font-bold text-zinc-500">v1.2.4-stable</p>
              </div>
           </div>
         </header>
 
         <section className="flex-1 overflow-hidden relative">
-          <div className="absolute inset-0 overflow-y-auto p-4 md:p-10 pb-32 md:pb-10">
+          <div className="absolute inset-0 p-4 md:p-10 pb-32 md:pb-10">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activePage}

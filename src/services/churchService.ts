@@ -134,7 +134,7 @@ export const churchService = {
       if (snap.exists()) {
         return snap.data() as ChurchSettings;
       }
-      return { name: 'Eclésia Manager' }; // Default
+      return { name: 'IBELOHIM' }; // Default
     } catch (e) { handleFirestoreError(e, 'get', 'config/church'); }
   },
 

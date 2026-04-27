@@ -68,6 +68,7 @@ export interface Registration {
   observations?: string;
   status: 'pending' | 'paid';
   amountPaid: number;
+  paymentMethod?: 'pix' | 'cash' | 'card';
   registeredAt?: string;
 }
 

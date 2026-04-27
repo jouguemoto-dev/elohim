@@ -82,22 +82,22 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
       const regData = {
         eventId: event.id!,
         name,
-        phone: formData.get('phone') as string,
-        cpf: formData.get('cpf') as string,
-        address: formData.get('address') as string,
-        birthDate: formData.get('birthDate') as string,
+        phone: (formData.get('phone') as string) || '',
+        cpf: (formData.get('cpf') as string) || '',
+        address: (formData.get('address') as string) || '',
+        birthDate: (formData.get('birthDate') as string) || '',
         isMinor: isMinor,
         isMember: formData.get('isMember') === 'sim',
-        guardianAuthorization: guardianAuth || undefined,
+        guardianAuthorization: guardianAuth || null,
         emergencyContacts: isMinor ? {
-          name1: formData.get('emergencyName1') as string,
-          phone1: formData.get('emergencyPhone1') as string,
-          name2: formData.get('emergencyName2') as string,
-          phone2: formData.get('emergencyPhone2') as string,
-        } : undefined,
-        bloodType: (formData.get('bloodType') as string) || undefined,
-        allergies: (formData.get('allergies') as string) || undefined,
-        observations: (formData.get('observations') as string) || undefined,
+          name1: (formData.get('emergencyName1') as string) || '',
+          phone1: (formData.get('emergencyPhone1') as string) || '',
+          name2: (formData.get('emergencyName2') as string) || '',
+          phone2: (formData.get('emergencyPhone2') as string) || '',
+        } : null,
+        bloodType: (formData.get('bloodType') as string) || null,
+        allergies: (formData.get('allergies') as string) || null,
+        observations: (formData.get('observations') as string) || null,
         status: 'pending' as const,
         amountPaid: 0,
       };
@@ -107,7 +107,18 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
       setSubmitted(true);
     } catch (e: any) {
       console.error("Submission error:", e);
-      alert('Erro ao realizar inscrição: ' + (e.message || 'Verifique sua conexão e tente novamente.'));
+      let errorMsg = 'Verifique sua conexão e tente novamente.';
+      if (e.message && e.message.includes('Quota exceeded')) {
+        errorMsg = 'Limite de armazenamento excedido. Tente reduzir o tamanho do anexo.';
+      } else if (e.message) {
+        try {
+          const parsed = JSON.parse(e.message);
+          errorMsg = parsed.error || errorMsg;
+        } catch {
+          errorMsg = e.message;
+        }
+      }
+      alert('Erro ao realizar inscrição: ' + errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -215,56 +226,43 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
         <motion.div 
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="max-w-md w-full bg-zinc-900 p-12 rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,1)] text-center border border-white/10 relative overflow-hidden"
+          className="max-w-md w-full bg-zinc-900 p-12 rounded-[3.5rem] shadow-[0_0_100px_rgba(0,0,0,1)] text-center border border-emerald-500/10 relative overflow-hidden"
         >
           {/* Success Decoration */}
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-[100px]" />
-          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-blue-500/10 rounded-full blur-[100px]" />
-
+          
           <div className="relative">
-            <div className="w-24 h-24 bg-emerald-500/10 text-emerald-400 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-2xl border border-emerald-500/20 animate-pulse">
+            <div className="w-24 h-24 bg-emerald-500/10 text-emerald-400 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-2xl border border-emerald-500/20 shadow-emerald-500/10">
               <CheckCircle2 size={48} />
             </div>
             
-            <p className="text-[10px] font-black uppercase tracking-[0.6em] text-emerald-500 mb-6 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">Protocolo de Confirmação</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.6em] text-emerald-500 mb-6 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">Inscrição Validada</p>
             
-            <h2 className="text-3xl font-black text-white mb-4 tracking-tighter">Inscrição Validada</h2>
+            <h2 className="text-3xl font-black text-white mb-4 tracking-tighter leading-tight">Parabéns!</h2>
             
-            <p className="text-xs text-zinc-400 mb-10 leading-relaxed uppercase tracking-widest font-bold">
-              Olá, <span className="text-white">{registrantName}</span>. Seu registro para o programa <strong className="text-white">{event.title}</strong> foi processado e armazenado com sucesso. 
+            <p className="text-sm text-zinc-400 mb-10 leading-relaxed font-bold">
+               Sua inscrição para o evento <strong className="text-white">{event.title}</strong> foi concluída com sucesso.
             </p>
 
-            <div className="p-8 bg-black/40 backdrop-blur-sm border border-white/5 rounded-[2.5rem] mb-12 flex flex-col gap-6 text-left shadow-2xl relative">
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
-                 <span className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Dossier do Evento</span>
-                 <CheckCircle2 size={14} className="text-emerald-500/50" />
-              </div>
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1">Missão</p>
-                  <p className="text-sm font-black text-white">{event.title}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1">Data</p>
-                    <p className="text-[11px] font-bold text-zinc-300">{format(new Date(event.startDate), 'dd/MM/yyyy')}</p>
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1">Horário</p>
-                    <p className="text-[11px] font-bold text-zinc-300">{format(new Date(event.startDate), 'HH:mm')} hrs</p>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-zinc-600 uppercase tracking-widest mb-1">Localização</p>
-                  <p className="text-[11px] font-bold text-zinc-300 break-words line-clamp-2">{event.location}</p>
-                </div>
-              </div>
+            <div className="p-8 bg-black/40 backdrop-blur-sm border border-white/5 rounded-[2.5rem] mb-12 space-y-4">
+               <div>
+                  <p className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.2em] mb-1">Participante</p>
+                  <p className="text-lg font-bold text-white tracking-tight">{registrantName}</p>
+               </div>
+               <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest bg-emerald-500/5 py-2 px-4 rounded-full border border-emerald-500/10 inline-block">
+                  Aguardamos você!
+               </p>
             </div>
 
-            <div className="flex flex-col gap-2 items-center opacity-40 hover:opacity-100 transition-opacity">
-              <p className="text-[9px] text-zinc-500 font-black uppercase tracking-[0.5em]">Eclesia Manager System</p>
-              <div className="w-16 h-px bg-zinc-800 rounded-full" />
-            </div>
+            <button 
+              onClick={() => {
+                setSubmitted(false);
+                setRegistrantName('');
+              }}
+              className="w-full py-5 bg-emerald-500 text-black rounded-[2rem] font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-emerald-400 transition-all active:scale-[0.98]"
+            >
+              Realizar Nova Inscrição
+            </button>
           </div>
         </motion.div>
       </div>
@@ -479,6 +477,7 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
                         <FileUploader 
                           label="Upload da Autorização Firmada (PDF/JPG)"
                           maxFiles={1}
+                          maxSize={0.3}
                           onUpload={(files) => setGuardianAuth(files[0] || null)}
                         />
 
