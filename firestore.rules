@@ -65,46 +65,72 @@ service cloud.firestore {
              data.createdAt is string;
     }
 
+    function isValidAccessRequest(data) {
+      return data.email is string && data.email.size() > 0 &&
+             data.name is string && data.status in ['pending', 'approved', 'denied'] &&
+             data.requestedAt is string;
+    }
+
+    function isMasterAdmin() {
+      return isSignedIn() && request.auth.token.email == 'jouguemoto@gmail.com';
+    }
+
+    function isApprovedAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'jouguemoto@gmail.com' ||
+        (exists(/databases/$(database)/documents/access_requests/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/access_requests/$(request.auth.uid)).data.status == 'approved')
+      );
+    }
+
     // Config Collection
     match /config/church {
       allow read: if true;
-      allow write: if isSignedIn() && isValidSettings(request.resource.data);
+      allow write: if isApprovedAdmin() && isValidSettings(request.resource.data);
     }
 
     // Event Types Collection
     match /eventTypes/{typeId} {
       allow read: if true;
-      allow write: if isSignedIn() && isValidEventType(request.resource.data);
-      allow delete: if isSignedIn();
+      allow write: if isApprovedAdmin() && isValidEventType(request.resource.data);
+      allow delete: if isApprovedAdmin();
     }
 
     // Members Collection
     match /members/{memberId} {
-      allow read, write: if isSignedIn(); // In a real app, check for admin role
-      allow create: if isSignedIn() && isValidId(memberId) && isValidMember(request.resource.data);
-      allow update: if isSignedIn() && isValidMember(request.resource.data);
+      allow read, write: if isApprovedAdmin();
+      allow create: if isApprovedAdmin() && isValidId(memberId) && isValidMember(request.resource.data);
+      allow update: if isApprovedAdmin() && isValidMember(request.resource.data);
     }
 
     // Events Collection
     match /events/{eventId} {
       allow read: if true; // Publicly readable for dynamic forms
-      allow write: if isSignedIn();
-      allow create: if isSignedIn() && isValidId(eventId) && isValidEvent(request.resource.data);
-      allow update: if isSignedIn() && isValidEvent(request.resource.data);
+      allow write: if isApprovedAdmin();
+      allow create: if isApprovedAdmin() && isValidId(eventId) && isValidEvent(request.resource.data);
+      allow update: if isApprovedAdmin() && isValidEvent(request.resource.data);
     }
 
     // Registrations Collection
     match /registrations/{registrationId} {
       allow create: if isValidRegistration(request.resource.data); // Public registration
-      allow read, update, delete: if isSignedIn(); // Admin only management
-      allow list: if isSignedIn();
+      allow read, update, delete: if isApprovedAdmin(); // Admin only management
+      allow list: if isApprovedAdmin();
     }
 
     // Event Templates Collection
     match /eventTemplates/{templateId} {
-      allow read, write: if isSignedIn();
-      allow create: if isSignedIn() && isValidEventTemplate(request.resource.data);
-      allow update: if isSignedIn() && isValidEventTemplate(request.resource.data);
+      allow read, write: if isApprovedAdmin();
+      allow create: if isApprovedAdmin() && isValidEventTemplate(request.resource.data);
+      allow update: if isApprovedAdmin() && isValidEventTemplate(request.resource.data);
+    }
+
+    // Access Requests Collection
+    match /access_requests/{requestId} {
+      allow create: if isSignedIn() && requestId == request.auth.uid && isValidAccessRequest(request.resource.data);
+      allow read: if isSignedIn() && (requestId == request.auth.uid || isMasterAdmin());
+      allow update, delete: if isMasterAdmin();
+      allow list: if isMasterAdmin() || (isSignedIn() && request.query.limit <= 1);
     }
   }
 }

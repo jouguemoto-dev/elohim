@@ -31,7 +31,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
     totalInscriptions: 0,
     totalCollected: 0,
     recentMembers: [] as Member[],
-    recentEvents: [] as ChurchEvent[],
+    recentRegistrations: [] as any[],
+    allEvents: [] as ChurchEvent[],
     upcomingEvents: [] as ChurchEvent[],
     birthdayMembers: [] as Member[]
   });
@@ -87,6 +88,8 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
         totalInscriptions: totalRegs,
         totalCollected: totalCollected,
         recentMembers: members.slice(0, 5),
+        recentRegistrations: allRegistrations.slice(0, 5),
+        allEvents: events,
         upcomingEvents: events.filter(e => new Date(e.startDate) >= now).slice(0, 3),
         birthdayMembers
       });
@@ -274,13 +277,74 @@ export default function Dashboard({ onNavigate }: DashboardProps) {
                     <span className="truncate flex items-center gap-1.5"><MapPin size={10} /> {event.location}</span>
                   </div>
                 </div>
-                <div className="self-center p-2 rounded-full border border-zinc-900 group-hover:border-zinc-700 transition-all">
-                   <ArrowRight size={14} className="text-zinc-700 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                <div className="flex flex-col gap-2 shrink-0">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); onNavigate('registrations'); }}
+                    className="p-3 rounded-xl border border-zinc-900 group-hover:border-zinc-700 bg-black/40 text-zinc-600 hover:text-white transition-all flex items-center gap-2 text-[8px] font-black uppercase tracking-widest"
+                  >
+                    <Users size={12} />
+                    <span>Inscritos</span>
+                  </button>
                 </div>
               </div>
             )) : (
               <div className="flex-1 flex items-center justify-center text-zinc-600 text-[10px] font-black uppercase tracking-widest italic py-12">Agenda limpa</div>
             )}
+          </div>
+        </div>
+
+        {/* Recent Registrations Table */}
+        <div className="lg:col-span-2 bg-black rounded-3xl border border-zinc-900 overflow-hidden flex flex-col h-[520px]">
+          <div className="px-8 py-6 border-b border-zinc-900/50 flex items-center justify-between bg-zinc-950/50">
+            <div>
+               <h3 className="font-display font-medium text-white tracking-tight">Novas Inscrições</h3>
+               <span className="text-[8px] font-black text-zinc-600 uppercase tracking-[0.4em] mt-1 block">Fluxo de Caixa & Presença</span>
+            </div>
+            <button 
+              onClick={() => onNavigate('registrations')}
+              className="px-4 py-2 bg-white/5 hover:bg-white/10 text-zinc-500 hover:text-white rounded-xl transition-all text-[9px] font-black uppercase tracking-widest border border-white/5"
+            >
+              Ver Painel Fluxo
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-[8px] font-black uppercase tracking-widest text-zinc-700 border-b border-zinc-900">
+                  <th className="px-4 py-3 text-left">Participante</th>
+                  <th className="px-4 py-3 text-left">Evento</th>
+                  <th className="px-4 py-3 text-right">Valor</th>
+                  <th className="px-4 py-3 text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-900/10">
+                {stats.recentRegistrations.length > 0 ? stats.recentRegistrations.map((reg) => (
+                  <tr 
+                    key={reg.id} 
+                    className="group cursor-pointer hover:bg-white/[0.01] transition-all"
+                    onClick={() => onNavigate('registrations')}
+                  >
+                    <td className="px-4 py-5 text-[11px] font-bold text-zinc-300 group-hover:text-white uppercase tracking-tight">{reg.name}</td>
+                    <td className="px-4 py-5 text-[9px] text-zinc-600 uppercase tracking-[0.2em] font-black truncate max-w-[150px]">
+                      {stats.allEvents.find(e => e.id === reg.eventId)?.title || 'Evento'}
+                    </td>
+                    <td className="px-4 py-5 text-right font-mono text-[10px] text-zinc-500">R$ {reg.amountPaid.toFixed(2)}</td>
+                    <td className="px-4 py-5 text-right">
+                      <span className={cn(
+                        "text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded",
+                        reg.status === 'paid' ? "text-emerald-500 bg-emerald-500/10 border border-emerald-500/20" : "text-amber-500 bg-amber-500/10 border border-amber-500/20"
+                      )}>
+                        {reg.status === 'paid' ? 'Liquidado' : 'Pendente'}
+                      </span>
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan={4} className="py-20 text-center text-zinc-800 text-[10px] font-black uppercase tracking-widest italic">Nenhuma inscrição processada</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

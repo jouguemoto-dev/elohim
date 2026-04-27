@@ -13,8 +13,10 @@ import {
   getDoc,
   setDoc
 } from 'firebase/firestore';
-import { db, handleFirestoreError } from '../lib/firebase';
-import { Member, ChurchEvent, Registration, ChurchSettings, EventType, EventTemplate } from '../types';
+import { db, handleFirestoreError, auth } from '../lib/firebase';
+import { Member, ChurchEvent, Registration, ChurchSettings, EventType, EventTemplate, AccessRequest } from '../types';
+
+export const MASTER_ADMIN_EMAIL = 'jouguemoto@gmail.com';
 
 export const churchService = {
   // Members
@@ -188,5 +190,75 @@ export const churchService = {
     try {
       await deleteDoc(doc(db, 'eventTemplates', id));
     } catch (e) { handleFirestoreError(e, 'delete', `eventTemplates/${id}`); }
+  },
+
+  // Access Control
+  async checkAccess(email: string): Promise<{ status: 'approved' | 'denied' | 'pending' | 'none' }> {
+    if (email === MASTER_ADMIN_EMAIL) return { status: 'approved' };
+    
+    try {
+      const q = query(collection(db, 'access_requests'), where('email', '==', email));
+      const snap = await getDocs(q);
+      if (snap.empty) return { status: 'none' };
+      
+      const docData = snap.docs[0].data() as AccessRequest;
+      return { status: docData.status };
+    } catch (e) {
+      console.error('Error checking access:', e);
+      return { status: 'none' };
+    }
+  },
+
+  async requestAccess(email: string, name: string) {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+
+    try {
+      const docRef = doc(db, 'access_requests', userId);
+      const snap = await getDoc(docRef);
+      if (snap.exists()) return;
+
+      await setDoc(docRef, {
+        email,
+        name,
+        status: 'pending',
+        requestedAt: new Date().toISOString()
+      });
+    } catch (e) {
+      handleFirestoreError(e, 'create', 'access_requests');
+    }
+  },
+
+  async getPendingRequests(): Promise<AccessRequest[]> {
+    try {
+      const q = query(collection(db, 'access_requests'), where('status', '==', 'pending'));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as AccessRequest));
+    } catch (e) {
+      handleFirestoreError(e, 'list', 'access_requests');
+    }
+  },
+
+  async getAllRequests(): Promise<AccessRequest[]> {
+    try {
+      const q = query(collection(db, 'access_requests'), orderBy('requestedAt', 'desc'));
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() } as AccessRequest));
+    } catch (e) {
+      handleFirestoreError(e, 'list', 'access_requests');
+    }
+  },
+
+  async updateRequestStatus(id: string, status: 'approved' | 'denied', adminEmail: string) {
+    try {
+      const docRef = doc(db, 'access_requests', id);
+      await updateDoc(docRef, {
+        status,
+        processedAt: new Date().toISOString(),
+        processedBy: adminEmail
+      });
+    } catch (e) {
+      handleFirestoreError(e, 'update', `access_requests/${id}`);
+    }
   }
 };

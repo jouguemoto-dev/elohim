@@ -110,6 +110,20 @@
       },
       "required": ["name", "title", "type"]
     },
+    "AccessRequest": {
+      "title": "Access Request",
+      "description": "User request to access the admin system",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "denied"] },
+        "requestedAt": { "type": "string", "format": "date-time" },
+        "processedAt": { "type": "string", "format": "date-time" },
+        "processedBy": { "type": "string" }
+      },
+      "required": ["email", "name", "status", "requestedAt"]
+    },
     "ChurchSettings": {
       "title": "Church Settings",
       "description": "Global configuration for the church",
@@ -158,6 +172,10 @@
     "/eventTemplates/{templateId}": {
       "schema": "EventTemplate",
       "description": "Reusable event templates"
+    },
+    "/access_requests/{requestId}": {
+      "schema": "AccessRequest",
+      "description": "Pending and processed admin access requests"
     }
   }
 }

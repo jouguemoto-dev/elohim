@@ -12,7 +12,9 @@ import {
   CreditCard,
   Download,
   FileText,
-  UserPlus
+  UserPlus,
+  ShieldAlert,
+  ShieldCheck
 } from 'lucide-react';
 import { auth, loginWithGoogle, logout } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -31,11 +33,14 @@ import EventsModule from './components/EventsModule';
 import RegistrationsModule from './components/RegistrationsModule';
 import SettingsModule from './components/SettingsModule';
 import PublicRegistration from './components/PublicRegistration';
+import AccessRequestsModule from './components/AccessRequestsModule';
+import { AiAssistant } from './components/AiAssistant';
 
-type Page = 'dashboard' | 'members' | 'events' | 'registrations' | 'settings' | 'public-form';
+type Page = 'dashboard' | 'members' | 'events' | 'registrations' | 'settings' | 'access' | 'public-form';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [accessStatus, setAccessStatus] = useState<'loading' | 'approved' | 'pending' | 'denied' | 'none'>('loading');
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState<Page>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth > 768);
@@ -84,64 +89,161 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
-        const churchSettings = await churchService.getSettings();
-        setSettings(churchSettings);
-        
-        // Only check upcoming events if we haven't already this session
-        if (!hasCheckedUpcoming) {
-          const events = await churchService.getEvents();
-          const now = new Date();
+        setAccessStatus('loading');
+        try {
+          const { status } = await churchService.checkAccess(u.email || '');
+          setAccessStatus(status);
           
-          events.forEach(event => {
-            const eventDate = parseISO(event.startDate);
-            const hoursDiff = differenceInHours(eventDate, now);
-            
-            // Check if event starts in the next 24 hours and hasn't started yet
-            if (hoursDiff > 0 && hoursDiff <= 24 && isAfter(eventDate, now)) {
-              toast.info(
-                <div className="flex flex-col gap-1">
-                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#050505]">Evento Próximo!</p>
-                  <p className="text-sm font-black text-black">{event.title}</p>
-                  <p className="text-[10px] text-zinc-500 font-medium">Inicia em aproximadamente {hoursDiff} horas.</p>
-                  <button 
-                    onClick={() => {
-                      setActivePage('events');
-                      toast.dismiss();
-                    }}
-                    className="mt-2 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors text-left"
-                  >
-                    Ver detalhes do evento →
-                  </button>
-                </div>,
-                {
-                  position: "top-right",
-                  autoClose: 10000,
-                  hideProgressBar: false,
-                  closeOnClick: false,
-                  pauseOnHover: true,
-                  draggable: true,
-                  style: {
-                    borderRadius: '1.5rem',
-                    background: 'white',
-                    border: '1px solid rgba(0,0,0,0.05)',
-                    boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
-                  }
-                }
-              );
+          if (status === 'none') {
+            await churchService.requestAccess(u.email || '', u.displayName || 'Admin');
+            setAccessStatus('pending');
+          }
+          
+          if (status === 'approved') {
+            const churchSettings = await churchService.getSettings();
+            setSettings(churchSettings);
+
+            // Seed requested event "Reunião Geral" if it doesn't exist
+            const events = await churchService.getEvents();
+            if (!events.some(e => e.title === 'Reunião Geral')) {
+              const tomorrow = new Date();
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              tomorrow.setHours(19, 0, 0, 0);
+              const tomorrowEnd = new Date(tomorrow);
+              tomorrowEnd.setHours(21, 0, 0, 0);
+
+              await churchService.addEvent({
+                title: 'Reunião Geral',
+                type: 'Culto',
+                startDate: tomorrow.toISOString(),
+                endDate: tomorrowEnd.toISOString(),
+                location: 'Templo Principal',
+                description: 'Reunião geral da igreja desenvolvida via solicitação IA.',
+                price: 0,
+                publicId: 'reuniao-geral-' + Math.random().toString(36).substring(2, 7)
+              });
             }
-          });
-          setHasCheckedUpcoming(true);
+            
+            // Only check upcoming events if we haven't already this session
+            if (!hasCheckedUpcoming && events.length > 0) {
+              const now = new Date();
+              events.forEach(event => {
+                const eventDate = parseISO(event.startDate);
+                const hoursDiff = differenceInHours(eventDate, now);
+                
+                if (hoursDiff > 0 && hoursDiff <= 24 && isAfter(eventDate, now)) {
+                  toast.info(
+                    <div className="flex flex-col gap-1">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-[#050505]">Evento Próximo!</p>
+                      <p className="text-sm font-black text-black">{event.title}</p>
+                      <p className="text-[10px] text-zinc-500 font-medium">Inicia em aproximadamente {hoursDiff} horas.</p>
+                      <button 
+                        onClick={() => {
+                          setActivePage('events');
+                          toast.dismiss();
+                        }}
+                        className="mt-2 text-[10px] font-black uppercase tracking-widest text-blue-600 hover:text-blue-800 transition-colors text-left"
+                      >
+                        Ver detalhes do evento →
+                      </button>
+                    </div>,
+                    {
+                      position: "top-right",
+                      autoClose: 10000,
+                      hideProgressBar: false,
+                      closeOnClick: false,
+                      pauseOnHover: true,
+                      draggable: true,
+                      style: {
+                        borderRadius: '1.5rem',
+                        background: 'white',
+                        border: '1px solid rgba(0,0,0,0.05)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+                      }
+                    }
+                  );
+                }
+              });
+              setHasCheckedUpcoming(true);
+            }
+          }
+        } catch (e) {
+          console.error('Error during access check:', e);
+          setAccessStatus('none');
         }
+      } else {
+        setAccessStatus('none');
       }
       setLoading(false);
     });
     return () => unsubscribe();
-  }, [activePage === 'settings', hasCheckedUpcoming]);
+  }, [hasCheckedUpcoming]);
 
   if (loading) {
     return (
-      <div className="h-screen w-screen flex items-center justify-center bg-[#050505]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#050505] gap-6">
+        <div className="relative">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          <div className="absolute inset-0 animate-pulse bg-white/5 blur-xl rounded-full"></div>
+        </div>
+        <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.5em] animate-pulse">Autenticando Camada de Segurança...</p>
+      </div>
+    );
+  }
+
+  // Gated Access Screen
+  if (user && accessStatus !== 'approved' && !isPublicUrl) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center p-6 bg-black">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md p-12 text-center bg-zinc-950 rounded-[3rem] border border-zinc-900 shadow-[0_50px_100px_rgba(0,0,0,0.8)] relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-32 bg-amber-500/5 blur-[80px]" />
+          
+          <div className={cn(
+            "mb-12 inline-flex items-center justify-center w-24 h-24 rounded-[2rem] border relative z-10 p-6 shadow-3xl transition-all duration-1000",
+            accessStatus === 'pending' ? "bg-amber-500/10 border-amber-500/20 text-amber-500 animate-pulse" : "bg-rose-500/10 border-rose-500/20 text-rose-500"
+          )}>
+            {accessStatus === 'pending' ? <ShieldAlert size={40} /> : <X size={40} />}
+          </div>
+
+          <h1 className="text-3xl font-display font-medium mb-4 tracking-tight text-white">
+            {accessStatus === 'pending' ? 'Solicitação em Análise' : 'Acesso Não Autorizado'}
+          </h1>
+          
+          <p className="text-zinc-500 mb-12 font-sans text-sm leading-relaxed max-w-xs mx-auto">
+            {accessStatus === 'pending' 
+              ? `Olá ${user.displayName || 'usuário'}, sua solicitação foi enviada automaticamente para JOUGUEMOTO@GMAIL.COM. Por favor, aguarde a liberação do seu acesso.`
+              : `Lamentamos, mas seu acesso ao painel Master Audit foi negado pelo administrador.`}
+          </p>
+
+          <div className="flex flex-col gap-4">
+             <div className="p-4 bg-zinc-900/50 rounded-2xl border border-zinc-900 flex items-center justify-between">
+                <div className="text-left">
+                   <p className="text-[8px] font-black uppercase text-zinc-600 tracking-widest mb-1">Status do Registro</p>
+                   <p className="text-[10px] font-mono font-bold text-zinc-400">{user.email}</p>
+                </div>
+                <div className={cn(
+                   "w-2 h-2 rounded-full",
+                   accessStatus === 'pending' ? "bg-amber-500" : "bg-rose-500"
+                )} />
+             </div>
+
+             <button 
+               onClick={logout}
+               className="w-full py-4 text-zinc-500 hover:text-white transition-colors text-[10px] font-black uppercase tracking-[0.2em]"
+             >
+               Sair da Conta
+             </button>
+          </div>
+
+          <div className="mt-12 pt-10 border-t border-zinc-900/50">
+            <p className="text-[9px] text-zinc-800 font-black uppercase tracking-[0.4em] mb-4">Master Audit Security Gate</p>
+            <ShieldCheck size={16} className="text-zinc-900 mx-auto" />
+          </div>
+        </motion.div>
       </div>
     );
   }
@@ -287,6 +389,9 @@ export default function App() {
             <NavItem icon={Users} label="Membros" id="members" />
             <NavItem icon={Calendar} label="Eventos" id="events" />
             <NavItem icon={CreditCard} label="Inscritos" id="registrations" />
+            {user?.email === 'jouguemoto@gmail.com' && (
+              <NavItem icon={ShieldCheck} label="Acessos" id="access" />
+            )}
             <NavItem icon={Settings} label="Ajustes" id="settings" />
           </nav>
         </div>
@@ -349,6 +454,7 @@ export default function App() {
                 {activePage === 'members' && <MembersModule />}
                 {activePage === 'events' && <EventsModule />}
                 {activePage === 'registrations' && <RegistrationsModule />}
+                {activePage === 'access' && <AccessRequestsModule />}
                 {activePage === 'settings' && <SettingsModule />}
               </motion.div>
             </AnimatePresence>
@@ -367,6 +473,7 @@ export default function App() {
         )}
       </main>
       <ToastContainer aria-label="Notificações do Sistema" />
+      <AiAssistant />
     </div>
   );
 }

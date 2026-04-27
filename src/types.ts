@@ -99,3 +99,13 @@ export interface EventTemplate {
   maxParticipants?: number;
   createdAt: string;
 }
+
+export interface AccessRequest {
+  id?: string;
+  email: string;
+  name: string;
+  status: 'pending' | 'approved' | 'denied';
+  requestedAt: string;
+  processedAt?: string;
+  processedBy?: string;
+}
