@@ -8,6 +8,7 @@ import {
   query, 
   where, 
   orderBy,
+  limit,
   serverTimestamp,
   Timestamp,
   getDoc,
@@ -193,11 +194,22 @@ export const churchService = {
   },
 
   // Access Control
-  async checkAccess(email: string): Promise<{ status: 'approved' | 'denied' | 'pending' | 'none' }> {
-    if (email === MASTER_ADMIN_EMAIL) return { status: 'approved' };
+  async checkAccess(email: string, uid?: string): Promise<{ status: 'approved' | 'denied' | 'pending' | 'none' }> {
+    if (email && email.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase()) return { status: 'approved' };
     
     try {
-      const q = query(collection(db, 'access_requests'), where('email', '==', email));
+      // Prefer looking up by UID if available
+      if (uid) {
+        const docRef = doc(db, 'access_requests', uid);
+        const snap = await getDoc(docRef);
+        if (snap.exists()) {
+          const docData = snap.data() as AccessRequest;
+          return { status: docData.status };
+        }
+      }
+
+      // Fallback to email query
+      const q = query(collection(db, 'access_requests'), where('email', '==', email.toLowerCase()), limit(1));
       const snap = await getDocs(q);
       if (snap.empty) return { status: 'none' };
       
@@ -219,7 +231,7 @@ export const churchService = {
       if (snap.exists()) return;
 
       await setDoc(docRef, {
-        email,
+        email: email.toLowerCase(),
         name,
         status: 'pending',
         requestedAt: new Date().toISOString()

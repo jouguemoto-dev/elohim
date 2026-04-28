@@ -26,7 +26,7 @@ export default function AccessRequestsModule() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'denied'>('all');
 
   const currentUserEmail = auth.currentUser?.email || '';
-  const isMaster = currentUserEmail === MASTER_ADMIN_EMAIL;
+  const isMaster = currentUserEmail.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
 
   const loadRequests = async () => {
     setLoading(true);

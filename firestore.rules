@@ -79,12 +79,14 @@ service cloud.firestore {
     }
 
     function isMasterAdmin() {
-      return isSignedIn() && request.auth.token.email == 'jouguemoto@gmail.com';
+      return isSignedIn() && 
+             'email' in request.auth.token && 
+             request.auth.token.email.toLower() == 'jouguemoto@gmail.com';
     }
 
     function isApprovedAdmin() {
       return isSignedIn() && (
-        request.auth.token.email == 'jouguemoto@gmail.com' ||
+        isMasterAdmin() ||
         (exists(/databases/$(database)/documents/access_requests/$(request.auth.uid)) && 
          get(/databases/$(database)/documents/access_requests/$(request.auth.uid)).data.status == 'approved')
       );

@@ -53,7 +53,7 @@ export default function EventsModule() {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [mobileView, setMobileView] = useState<'list' | 'detail'>('list');
   const [editingEvent, setEditingEvent] = useState<ChurchEvent | null>(null);
-  const [activeTab, setActiveTab] = useState<'details' | 'registrations'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'registrations' | 'management'>('details');
   const [paymentMenuId, setPaymentMenuId] = useState<string | null>(null);
   const [eventAttachments, setEventAttachments] = useState<Attachment[]>([]);
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
@@ -616,6 +616,16 @@ export default function EventsModule() {
                   {activeTab === 'details' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
                 </button>
                 <button 
+                   onClick={() => setActiveTab('management')}
+                   className={cn(
+                     "flex-1 md:flex-none px-4 md:px-8 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] transition-all relative",
+                     activeTab === 'management' ? "text-white" : "text-zinc-600 hover:text-zinc-400"
+                   )}
+                >
+                  Gestão
+                  {activeTab === 'management' && <motion.div layoutId="activeTab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-white" />}
+                </button>
+                <button 
                    onClick={() => setActiveTab('registrations')}
                    className={cn(
                      "flex-1 md:flex-none px-4 md:px-8 text-[10px] md:text-[11px] font-bold uppercase tracking-[0.2em] transition-all relative",
@@ -628,7 +638,122 @@ export default function EventsModule() {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 md:p-10">
-                {activeTab === 'details' ? (
+                {activeTab === 'management' ? (
+                  <div className="space-y-10 animate-in fade-in duration-500">
+                    {/* Management Dashboard */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="p-8 bg-zinc-950 border border-zinc-900 rounded-[2rem] shadow-2xl">
+                         <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] mb-3">Capacidade Ocupada</p>
+                         <div className="flex items-end gap-3 mb-4">
+                           <p className="text-4xl font-black text-white tracking-tighter">{registrations.length}</p>
+                           <p className="text-sm font-bold text-zinc-700 mb-1">/ {selectedEvent.maxParticipants || '∞'}</p>
+                         </div>
+                         <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
+                           <div 
+                             className="h-full bg-white transition-all duration-1000" 
+                             style={{ width: `${selectedEvent.maxParticipants ? Math.min(100, (registrations.length / selectedEvent.maxParticipants) * 100) : 0}%` }} 
+                           />
+                         </div>
+                      </div>
+
+                      <div className="p-8 bg-zinc-950 border border-zinc-900 rounded-[2rem] shadow-2xl">
+                         <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] mb-3">Ticket Médio</p>
+                         <p className="text-4xl font-black text-white tracking-tighter">
+                           R$ {registrations.length > 0 ? (totalCollected / registrations.length).toFixed(2) : '0.00'}
+                         </p>
+                      </div>
+
+                      <div className="p-8 bg-zinc-950 border border-zinc-900 rounded-[2rem] shadow-2xl border-l-emerald-500/20 text-right">
+                         <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-[0.3em] mb-3">Saldo Realizado</p>
+                         <p className="text-4xl font-black text-emerald-400 tracking-tighter">
+                           {((totalCollected / (registrations.length * selectedEvent.price || 1)) * 100).toFixed(0)}%
+                         </p>
+                         <p className="text-[10px] font-bold text-zinc-700 uppercase tracking-widest mt-2">Arrecadado vs Esperado</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                      {/* Financial Breakdown */}
+                      <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8">
+                        <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] mb-8 border-b border-white/5 pb-4">Detalhamento Financeiro</h4>
+                        <div className="space-y-6">
+                           <div className="flex justify-between items-center group">
+                             <span className="text-xs text-zinc-500 group-hover:text-zinc-300 transition-colors uppercase tracking-widest font-bold">Total Esperado</span>
+                             <span className="text-sm font-mono text-white">R$ {(registrations.length * selectedEvent.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                           </div>
+                           <div className="flex justify-between items-center group">
+                             <span className="text-xs text-emerald-500/60 group-hover:text-emerald-500 transition-colors uppercase tracking-widest font-bold">Total Recebido</span>
+                             <span className="text-sm font-mono text-emerald-400">R$ {totalCollected.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                           </div>
+                           <div className="flex justify-between items-center group">
+                             <span className="text-xs text-amber-500/60 group-hover:text-amber-500 transition-colors uppercase tracking-widest font-bold">Pendente</span>
+                             <span className="text-sm font-mono text-amber-500">R$ {( (registrations.length * selectedEvent.price) - totalCollected ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                           </div>
+                           <div className="pt-6 border-t border-white/5 mt-6">
+                             <div className="flex justify-between items-center">
+                               <span className="text-xs text-zinc-400 uppercase tracking-widest font-black">Previsão Líquida</span>
+                               <span className="text-xl font-display font-medium text-white tracking-tight">R$ {(registrations.length * selectedEvent.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                             </div>
+                           </div>
+                        </div>
+                      </div>
+
+                      {/* Quick Management Actions */}
+                      <div className="bg-white/[0.02] border border-white/5 rounded-[2.5rem] p-8">
+                        <h4 className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.4em] mb-8 border-b border-white/5 pb-4">Ações de Gestão</h4>
+                        <div className="grid grid-cols-1 gap-3">
+                          <button 
+                            onClick={() => {
+                              setEditingEvent(selectedEvent);
+                              setTemplateRevision(0);
+                              setIsEventModalOpen(true);
+                            }}
+                            className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group"
+                          >
+                            <div className="flex items-center gap-4">
+                              <Edit size={18} className="text-zinc-600 group-hover:text-white" />
+                              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 group-hover:text-white">Alterar Informações</span>
+                            </div>
+                            <ChevronRight size={14} className="text-zinc-800" />
+                          </button>
+                          
+                          <button 
+                            onClick={exportPDF}
+                            className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group"
+                          >
+                            <div className="flex items-center gap-4">
+                              <Download size={18} className="text-zinc-600 group-hover:text-white" />
+                              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 group-hover:text-white">Relatório Completo (PDF)</span>
+                            </div>
+                            <ChevronRight size={14} className="text-zinc-800" />
+                          </button>
+
+                          <button 
+                            onClick={exportExcel}
+                            className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group"
+                          >
+                            <div className="flex items-center gap-4">
+                              <FileSpreadsheet size={18} className="text-zinc-600 group-hover:text-white" />
+                              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 group-hover:text-white">Base de Dados (Excel)</span>
+                            </div>
+                            <ChevronRight size={14} className="text-zinc-800" />
+                          </button>
+
+                          <button 
+                            onClick={() => setIsQrModalOpen(true)}
+                            className="flex items-center justify-between p-4 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group"
+                          >
+                            <div className="flex items-center gap-4">
+                              <QrCode size={18} className="text-zinc-600 group-hover:text-white" />
+                              <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-400 group-hover:text-white">QR Code de Check-in</span>
+                            </div>
+                            <ChevronRight size={14} className="text-zinc-800" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : activeTab === 'details' ? (
                   <div className="space-y-10">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                       <div className="p-8 bg-white/[0.03] border border-white/5 rounded-3xl shadow-2xl group hover:border-white/10 transition-all">
@@ -636,7 +761,20 @@ export default function EventsModule() {
                          <p className="text-3xl font-black text-white tracking-tighter">R$ {selectedEvent.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       </div>
                       <div className="p-8 bg-white/[0.03] border border-white/5 rounded-3xl shadow-2xl group hover:border-white/10 transition-all border-l-emerald-500/20">
-                         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mb-3">Arrecadação Total</p>
+                         <div className="flex justify-between items-start mb-3">
+                           <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em]">Arrecadação Total</p>
+                           <button 
+                             onClick={() => {
+                               setEditingEvent(selectedEvent);
+                               setTemplateRevision(0);
+                               setIsEventModalOpen(true);
+                             }}
+                             className="p-2 bg-white/5 border border-white/10 rounded-xl text-zinc-600 hover:text-white hover:bg-white/10 transition-all"
+                             title="Alterar Informações"
+                           >
+                             <Edit size={14} />
+                           </button>
+                         </div>
                          <p className="text-3xl font-black text-emerald-400 tracking-tighter">R$ {totalCollected.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                       </div>
                     </div>
@@ -761,6 +899,31 @@ export default function EventsModule() {
                   </div>
                 ) : (
                   <div className="flex flex-col h-full space-y-6">
+                    <div className="bg-zinc-950 border border-zinc-900 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/[0.02] blur-3xl rounded-full -mr-32 -mt-32" />
+                      <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                        <div>
+                           <p className="text-zinc-600 text-[9px] font-black uppercase tracking-[0.4em] mb-4">Volume Financeiro Realizado</p>
+                           <div className="flex items-baseline gap-2">
+                             <span className="text-zinc-700 text-lg font-display">R$</span>
+                             <h3 className="text-5xl font-display font-medium text-white tracking-tighter">
+                               {totalCollected.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                             </h3>
+                           </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-8 border-l border-zinc-900 pl-8">
+                           <div>
+                             <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest mb-1.5">Meta Estimada</p>
+                             <p className="text-lg font-mono text-zinc-500 tracking-tighter">R$ {(registrations.length * selectedEvent.price).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                           </div>
+                           <div>
+                             <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest mb-1.5">Pendência</p>
+                             <p className="text-lg font-mono text-amber-500/60 tracking-tighter">R$ {((registrations.length * selectedEvent.price) - totalCollected).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 font-black">
                       <div className="bg-white/[0.02] border border-emerald-500/10 p-4 rounded-3xl flex flex-col items-center justify-center relative overflow-hidden group">
                         <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />

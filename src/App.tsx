@@ -20,7 +20,7 @@ import { auth, loginWithGoogle, logout } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { cn } from './lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
-import { churchService } from './services/churchService';
+import { churchService, MASTER_ADMIN_EMAIL } from './services/churchService';
 import { ChurchSettings } from './types';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -92,43 +92,75 @@ export default function App() {
       if (u) {
         setAccessStatus('loading');
         try {
-          const { status } = await churchService.checkAccess(u.email || '');
-          setAccessStatus(status);
+          const userEmail = (u.email || '').toLowerCase().trim();
+          const masterEmail = MASTER_ADMIN_EMAIL.toLowerCase().trim();
           
-          if (status === 'none') {
-            await churchService.requestAccess(u.email || '', u.displayName || 'Admin');
-            setAccessStatus('pending');
+          // Speed up master admin access
+          if (userEmail === masterEmail) {
+            setAccessStatus('approved');
+            try {
+              const churchSettings = await churchService.getSettings();
+              setSettings(churchSettings);
+              
+              const events = await churchService.getEvents();
+              // Check upcoming events logic... (omitted move for now)
+            } catch (initErr) {
+              console.error('Master Admin init error:', initErr);
+              // Don't downgrade access status for master admin if data load fails
+              // Just use defaults
+              if (!settings) setSettings({ name: 'Eclesia (Local Mode)' });
+            }
+          } else {
+            const { status } = await churchService.checkAccess(u.email || '', u.uid);
+            setAccessStatus(status);
+            
+            if (status === 'none') {
+              await churchService.requestAccess(u.email || '', u.displayName || 'Admin');
+              setAccessStatus('pending');
+            }
+            
+            if (status === 'approved') {
+              const churchSettings = await churchService.getSettings();
+              setSettings(churchSettings);
+            }
           }
-          
-          if (status === 'approved') {
-            const churchSettings = await churchService.getSettings();
-            setSettings(churchSettings);
 
-            // Seed requested event "Reunião Geral" if it doesn't exist
+          // Shared logic for approved users
+          if (userEmail === masterEmail || (await churchService.checkAccess(u.email || '', u.uid)).status === 'approved') {
             const events = await churchService.getEvents();
+            
+            // Seed requested event "Reunião Geral" if it doesn't exist
             if (!events.some(e => e.title === 'Reunião Geral')) {
-              const tomorrow = new Date();
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              tomorrow.setHours(19, 0, 0, 0);
-              const tomorrowEnd = new Date(tomorrow);
-              tomorrowEnd.setHours(21, 0, 0, 0);
+              try {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(19, 0, 0, 0);
+                const tomorrowEnd = new Date(tomorrow);
+                tomorrowEnd.setHours(21, 0, 0, 0);
 
-              await churchService.addEvent({
-                title: 'Reunião Geral',
-                type: 'Culto',
-                startDate: tomorrow.toISOString(),
-                endDate: tomorrowEnd.toISOString(),
-                location: 'Templo Principal',
-                description: 'Reunião geral da igreja desenvolvida via solicitação IA.',
-                price: 0,
-                publicId: 'reuniao-geral-' + Math.random().toString(36).substring(2, 7)
-              });
+                await churchService.addEvent({
+                  title: 'Reunião Geral',
+                  type: 'Culto',
+                  startDate: tomorrow.toISOString(),
+                  endDate: tomorrowEnd.toISOString(),
+                  location: 'Templo Principal',
+                  description: 'Reunião geral da igreja desenvolvida via solicitação IA.',
+                  price: 0,
+                  publicId: 'reuniao-geral-' + Math.random().toString(36).substring(2, 7)
+                });
+              } catch (e) {
+                console.warn('Could not seed default event:', e);
+              }
             }
 
             // Seed "Oficina" event type if it doesn't exist
-            const eventTypes = await churchService.getEventTypes();
-            if (!eventTypes.some(t => t.name === 'Oficina')) {
-              await churchService.addEventType('Oficina');
+            try {
+              const eventTypes = await churchService.getEventTypes();
+              if (!eventTypes.some(t => t.name === 'Oficina')) {
+                await churchService.addEventType('Oficina');
+              }
+            } catch (e) {
+              console.warn('Could not seed default type:', e);
             }
             
             // Only check upcoming events if we haven't already this session
@@ -176,7 +208,8 @@ export default function App() {
           }
         } catch (e) {
           console.error('Error during access check:', e);
-          setAccessStatus('none');
+          // If we already detected approved or master, keep it
+          setAccessStatus(prev => prev === 'approved' ? 'approved' : 'none');
         }
       } else {
         setAccessStatus('none');
@@ -396,7 +429,7 @@ export default function App() {
             <NavItem icon={Users} label="Membros" id="members" />
             <NavItem icon={Calendar} label="Eventos" id="events" />
             <NavItem icon={CreditCard} label="Inscritos" id="registrations" />
-            {user?.email === 'jouguemoto@gmail.com' && (
+            {user?.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() && (
               <NavItem icon={ShieldCheck} label="Acessos" id="access" />
             )}
             <NavItem icon={Settings} label="Ajustes" id="settings" />

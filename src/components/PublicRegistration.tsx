@@ -14,7 +14,8 @@ import {
   FileText,
   ShieldCheck,
   Map,
-  X
+  X,
+  PartyPopper
 } from 'lucide-react';
 import { churchService } from '../services/churchService';
 import { ChurchEvent, Attachment } from '../types';
@@ -23,6 +24,7 @@ import { format, differenceInYears } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import FileUploader from './FileUploader';
 import { cn } from '../lib/utils';
+import confetti from 'canvas-confetti';
 
 export default function PublicRegistration({ publicId }: { publicId: string }) {
   const [event, setEvent] = useState<ChurchEvent | null>(null);
@@ -64,6 +66,28 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
       setIsMinor(false);
     }
   }, [birthDate]);
+
+  useEffect(() => {
+    if (submitted) {
+      const duration = 3 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+      const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+      const interval: any = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+        confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+      }, 250);
+    }
+  }, [submitted]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -235,7 +259,7 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
         <div className="max-w-md w-full bg-zinc-900 p-10 rounded-[2.5rem] shadow-2xl border border-white/5 text-center">
           <AlertTriangle size={56} className="text-red-500 mx-auto mb-6" />
           <h2 className="text-2xl font-black text-white mb-3 tracking-tight">Falha de Protocolo</h2>
-          <p className="text-zinc-500 mb-10 text-xs leading-relaxed uppercase tracking-widest font-bold">{error}</p>
+          <p className="text-zinc-500 mb-10 text-xs leading-relaxed uppercase tracking-widest font-bold">{error || 'Evento não identificado ou expirado'}</p>
           <a href="/" className="inline-block px-10 py-4 bg-white text-black rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all shadow-2xl active:scale-95">Retornar ao Terminal</a>
         </div>
       </div>
@@ -252,29 +276,49 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
         >
           {/* Success Decoration */}
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-[100px]" />
+          <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-[100px]" />
           
           <div className="relative">
-            <div className="w-24 h-24 bg-emerald-500/10 text-emerald-400 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-2xl border border-emerald-500/20 shadow-emerald-500/10">
-              <CheckCircle2 size={48} />
-            </div>
+            <motion.div 
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", damping: 12, stiffness: 200, delay: 0.2 }}
+              className="w-24 h-24 bg-emerald-500/10 text-emerald-400 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-2xl border border-emerald-500/20 shadow-emerald-500/10"
+            >
+              <PartyPopper size={48} className="animate-bounce" />
+            </motion.div>
             
-            <p className="text-[11px] font-black uppercase tracking-[0.6em] text-emerald-500 mb-6 drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">Inscrição Validada</p>
-            
-            <h2 className="text-3xl font-black text-white mb-4 tracking-tighter leading-tight">Parabéns!</h2>
-            
-            <p className="text-sm text-zinc-400 mb-10 leading-relaxed font-bold">
-               Sua inscrição para o evento <strong className="text-white">{event.title}</strong> foi concluída com sucesso.
-            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <p className="text-[11px] font-black uppercase tracking-[0.6em] text-emerald-500 mb-6 drop-shadow-[0_0_100px_rgba(16,185,129,0.3)]">Inscrição Validada</p>
+              
+              <h2 className="text-4xl font-black text-white mb-4 tracking-tighter leading-tight">Parabéns! 🎊</h2>
+              
+              <p className="text-sm text-zinc-400 mb-10 leading-relaxed font-bold">
+                 Excelente notícia! Sua inscrição para <strong className="text-white">{event.title}</strong> foi confirmada.
+              </p>
+            </motion.div>
 
-            <div className="p-8 bg-black/40 backdrop-blur-sm border border-white/5 rounded-[2.5rem] mb-12 space-y-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.6 }}
+              className="p-8 bg-black/40 backdrop-blur-sm border border-white/5 rounded-[2.5rem] mb-12 space-y-4"
+            >
                <div>
-                  <p className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.2em] mb-1">Participante</p>
-                  <p className="text-lg font-bold text-white tracking-tight">{registrantName}</p>
+                  <p className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.2em] mb-1">Participante Confirmado</p>
+                  <p className="text-xl font-bold text-white tracking-tight">{registrantName}</p>
                </div>
-               <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest bg-emerald-500/5 py-2 px-4 rounded-full border border-emerald-500/10 inline-block">
-                  Aguardamos você!
-               </p>
-            </div>
+               <div className="flex items-center justify-center gap-2 py-2 px-4 bg-emerald-500/5 rounded-full border border-emerald-500/10">
+                 <CheckCircle2 size={12} className="text-emerald-500" />
+                 <p className="text-[10px] text-zinc-400 font-bold uppercase tracking-widest">
+                    Vaga Garantida
+                 </p>
+               </div>
+            </motion.div>
 
             <button 
               onClick={() => {
