@@ -79,7 +79,7 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
     const name = formData.get('name') as string;
     
     try {
-      const regData = {
+      const regData: any = {
         eventId: event.id!,
         name,
         email: (formData.get('email') as string) || '',
@@ -89,20 +89,37 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
         birthDate: (formData.get('birthDate') as string) || '',
         isMinor: isMinor,
         isMember: formData.get('isMember') === 'sim',
-        guardianAuthorization: guardianAuth || null,
-        emergencyContacts: isMinor ? {
-          name1: (formData.get('emergencyName1') as string) || '',
-          phone1: (formData.get('emergencyPhone1') as string) || '',
-          name2: (formData.get('emergencyName2') as string) || '',
-          phone2: (formData.get('emergencyPhone2') as string) || '',
-        } : null,
-        bloodType: (formData.get('bloodType') as string) || null,
-        allergies: (formData.get('allergies') as string) || null,
-        observations: (formData.get('observations') as string) || null,
         status: 'pending' as const,
         amountPaid: 0,
         updatedAt: new Date().toISOString(),
       };
+
+      if (isMinor) {
+        if (guardianAuth) regData.guardianAuthorization = guardianAuth;
+        regData.emergencyContacts = {
+          name1: (formData.get('emergencyName1') as string) || '',
+          phone1: (formData.get('emergencyPhone1') as string) || '',
+          name2: (formData.get('emergencyName2') as string) || '',
+          phone2: (formData.get('emergencyPhone2') as string) || '',
+        };
+      }
+
+      const bloodType = formData.get('bloodType') as string;
+      if (bloodType) regData.bloodType = bloodType;
+      
+      const allergies = formData.get('allergies') as string;
+      if (allergies) regData.allergies = allergies;
+
+      const medications = formData.get('medications') as string;
+      if (medications) regData.medications = medications;
+      
+      const observations = formData.get('observations') as string;
+      if (observations) regData.observations = observations;
+
+      // Ensure required string fields are not empty to pass rules
+      if (!regData.name || !regData.phone || !regData.email) {
+        throw new Error('Por favor, preencha todos os campos obrigatórios (Nome, E-mail e Telefone).');
+      }
 
       await churchService.addRegistration(regData);
       setRegistrantName(name);
@@ -116,6 +133,9 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
         try {
           const parsed = JSON.parse(e.message);
           errorMsg = parsed.error || errorMsg;
+          if (errorMsg.includes('Missing or insufficient permissions')) {
+            errorMsg = 'Erro de permissão no servidor. Verifique se todos os campos obrigatórios estão preenchidos corretamente.';
+          }
         } catch {
           errorMsg = e.message;
         }
@@ -547,6 +567,17 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
                     <input 
                       name="allergies" 
                       placeholder="Medicamentos ou substâncias..." 
+                      className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-sm text-white focus:ring-2 focus:ring-white/10 outline-none transition-all placeholder:text-zinc-800 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500 px-1">Medicamentos de Uso Contínuo</label>
+                    <input 
+                      name="medications" 
+                      placeholder="Liste os medicamentos necessários..." 
                       className="w-full px-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-sm text-white focus:ring-2 focus:ring-white/10 outline-none transition-all placeholder:text-zinc-800 font-bold"
                     />
                   </div>

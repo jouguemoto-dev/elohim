@@ -48,6 +48,7 @@ service cloud.firestore {
              (!('memberId' in data) || data.memberId is string) &&
              (!('bloodType' in data) || data.bloodType is string) &&
              (!('allergies' in data) || data.allergies is string) &&
+             (!('medications' in data) || data.medications is string) &&
              (!('observations' in data) || data.observations is string) &&
              (!('emergencyContacts' in data) || data.emergencyContacts is map) &&
              (!('guardianAuthorization' in data) || data.guardianAuthorization is map);

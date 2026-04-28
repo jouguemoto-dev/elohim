@@ -76,6 +76,7 @@ export interface Registration {
   };
   bloodType?: string;
   allergies?: string;
+  medications?: string;
   observations?: string;
   status: 'pending' | 'paid';
   amountPaid: number;
