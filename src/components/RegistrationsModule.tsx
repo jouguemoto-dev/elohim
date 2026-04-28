@@ -41,6 +41,7 @@ import 'jspdf-autotable';
 
 import ConfirmModal from './ConfirmModal';
 import RegistrationReport from './RegistrationReport';
+import TreasuryReport from './TreasuryReport';
 
 const isBirthdayUpcoming = (birthDate: string | undefined) => {
   if (!birthDate) return false;
@@ -82,7 +83,7 @@ export default function RegistrationsModule() {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [viewMode, setViewMode] = useState<'table' | 'grid' | 'charts' | 'xls'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'grid' | 'charts' | 'xls' | 'treasury'>('table');
   const [sortConfig, setSortConfig] = useState<{ key: keyof Registration | 'eventName'; direction: 'asc' | 'desc' }>({ key: 'registeredAt', direction: 'desc' });
   const [memberFilter, setMemberFilter] = useState<'all' | 'member' | 'non-member'>('all');
   const [ageFilter, setAgeFilter] = useState<'all' | 'minor' | 'adult'>('all');
@@ -90,6 +91,8 @@ export default function RegistrationsModule() {
   const [selectedReg, setSelectedReg] = useState<Registration | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [paymentMenuId, setPaymentMenuId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -141,6 +144,14 @@ export default function RegistrationsModule() {
     if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
     return 0;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, eventFilter, statusFilter, memberFilter, ageFilter, sortConfig]);
+
+  const totalPages = Math.ceil(filteredRegistrations.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedRegistrations = filteredRegistrations.slice(startIndex, startIndex + itemsPerPage);
 
   const totalCollected = filteredRegistrations
     .reduce((acc, curr) => acc + (curr.amountPaid || 0), 0);
@@ -251,11 +262,13 @@ export default function RegistrationsModule() {
         eventId,
         name: formData.get('name') as string,
         phone: formData.get('phone') as string,
+        email: formData.get('email') as string,
         cpf: formData.get('cpf') as string,
         address: formData.get('address') as string,
         birthDate: formData.get('birthDate') as string,
         isMinor,
-        emergencyContacts: isMinor ? {
+        updatedAt: new Date().toISOString(),
+        emergencyContacts: (isMinor || formData.get('emergencyName1')) ? {
           name1: formData.get('emergencyName1') as string,
           phone1: formData.get('emergencyPhone1') as string,
           name2: formData.get('emergencyName2') as string,
@@ -302,30 +315,159 @@ export default function RegistrationsModule() {
     XLSX.writeFile(wb, `inscritos_${format(new Date(), 'dd_MM_yyyy')}.xlsx`);
   };
 
+  const exportManagerialReportToExcel = () => {
+    const workbook = XLSX.utils.book_new();
+    
+    // Create detailed data grouped by event
+    groupedData.forEach(group => {
+      const eventTitle = group.event.title;
+      const sheetData = group.regs.map(reg => ({
+        'Nome': reg.name,
+        'Telefone': reg.phone,
+        'CPF': reg.cpf || '-',
+        'Membro': reg.isMember ? 'Sim' : 'Não',
+        'Status': reg.status === 'paid' ? 'Pago' : 'Pendente',
+        'Valor Pago': reg.amountPaid,
+        'Data Inscrição': reg.registeredAt ? format(new Date(reg.registeredAt), 'dd/MM/yyyy HH:mm') : '-'
+      }));
+      
+      // Add summary rows at the bottom of each sheet data
+      sheetData.push({} as any); // empty row
+      sheetData.push({
+        'Nome': 'RESUMO DO EVENTO',
+        'Telefone': '',
+        'CPF': '',
+        'Membro': '',
+        'Status': 'TOTAL INSCRITOS',
+        'Valor Pago': group.count,
+        'Data Inscrição': ''
+      } as any);
+      sheetData.push({
+        'Nome': '',
+        'Telefone': '',
+        'CPF': '',
+        'Membro': '',
+        'Status': 'TOTAL ARRECADADO',
+        'Valor Pago': group.totalCollected,
+        'Data Inscrição': ''
+      } as any);
+      sheetData.push({
+        'Nome': '',
+        'Telefone': '',
+        'CPF': '',
+        'Membro': '',
+        'Status': 'VALOR PENDENTE',
+        'Valor Pago': group.totalPending,
+        'Data Inscrição': ''
+      } as any);
+
+      const ws = XLSX.utils.json_to_sheet(sheetData);
+      XLSX.utils.book_append_sheet(workbook, ws, eventTitle.substring(0, 30));
+    });
+
+    // Also add a summary sheet
+    const summaryData = groupedData.map(group => ({
+      'Evento': group.event.title,
+      'Total Inscritos': group.count,
+      'Total Arrecadado': group.totalCollected,
+      'Total Pendente': group.totalPending
+    }));
+    
+    const summaryWs = XLSX.utils.json_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summaryWs, "Resumo Geral");
+
+    XLSX.writeFile(workbook, `relatorio_gerencial_${format(new Date(), 'dd_MM_yyyy')}.xlsx`);
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF() as any;
-    doc.setFontSize(18);
-    doc.text('Relatório Financeiro de Inscritos', 14, 22);
-    doc.setFontSize(10);
-    doc.text(`Data: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 30);
-    doc.text(`Total Inscritos: ${filteredRegistrations.length}`, 14, 35);
-    doc.text(`Total Arrecadado: R$ ${totalCollected.toLocaleString('pt-BR')}`, 14, 40);
+    const selectedEvent = events.find(e => e.id === eventFilter);
+    const title = selectedEvent ? `Lista de Inscritos: ${selectedEvent.title}` : 'Lista Geral de Inscritos';
 
+    doc.setFontSize(18);
+    doc.text(title, 14, 22);
+    
+    doc.setFontSize(10);
+    doc.text(`Data do Relatório: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, 30);
+    
     const tableData = filteredRegistrations.map(reg => [
       reg.name,
-      getEventName(reg.eventId),
-      reg.registeredAt ? format(new Date(reg.registeredAt), 'dd/MM/yyyy HH:mm') : '-',
+      reg.phone || '-',
       reg.status === 'paid' ? 'Pago' : 'Pendente',
       `R$ ${reg.amountPaid.toFixed(2)}`
     ]);
 
     doc.autoTable({
-      startY: 45,
-      head: [['Nome', 'Evento', 'Data Inscrição', 'Status', 'Valor']],
+      startY: 35,
+      head: [['Participante', 'Telefone', 'Status', 'Valor Pago']],
       body: tableData,
+      theme: 'grid',
+      headStyles: { fillColor: [40, 40, 40] },
+      styles: { fontSize: 9 },
+      columnStyles: {
+        3: { halign: 'right' }
+      }
     });
 
-    doc.save(`inscritos_financeiro_${format(new Date(), 'dd_MM_yyyy')}.pdf`);
+    const fileName = selectedEvent 
+      ? `inscritos_${selectedEvent.title.toLowerCase().replace(/\s+/g, '_')}.pdf`
+      : `lista_inscritos_${format(new Date(), 'dd_MM_yyyy')}.pdf`;
+
+    doc.save(fileName);
+  };
+
+  const exportManagerialReportToPDF = () => {
+    const doc = new jsPDF() as any;
+    let yPos = 20;
+
+    doc.setFontSize(18);
+    doc.text('Relatório Gerencial de Eventos', 14, yPos);
+    yPos += 10;
+    
+    doc.setFontSize(10);
+    doc.text(`Data: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, yPos);
+    yPos += 15;
+
+    groupedData.forEach((group, index) => {
+      if (index > 0 && yPos > 240) {
+        doc.addPage();
+        yPos = 20;
+      }
+
+      doc.setFontSize(14);
+      doc.setTextColor(0, 0, 0);
+      doc.text(group.event.title, 14, yPos);
+      yPos += 8;
+
+      const tableData = group.regs.map(reg => [
+        reg.name,
+        reg.phone,
+        reg.status === 'paid' ? 'Pago' : 'Pendente',
+        `R$ ${reg.amountPaid.toFixed(2)}`
+      ]);
+
+      doc.autoTable({
+        startY: yPos,
+        head: [['Nome', 'Telefone', 'Status', 'Valor']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [40, 40, 40] },
+        foot: [[
+          { content: 'TOTAL DO EVENTO', colSpan: 2, styles: { fontStyle: 'bold' } },
+          { content: `Inscritos: ${group.count}`, styles: { fontStyle: 'bold' } },
+          { content: `Arrecadado: R$ ${group.totalCollected.toFixed(2)}`, styles: { fontStyle: 'bold' } }
+        ]],
+        margin: { bottom: 20 }
+      });
+
+      yPos = (doc as any).lastAutoTable.finalY + 10;
+      
+      doc.setFontSize(10);
+      doc.text(`Valor Pendente estimado para este evento: R$ ${group.totalPending.toFixed(2)}`, 14, yPos);
+      yPos += 15;
+    });
+
+    doc.save(`relatorio_gerencial_${format(new Date(), 'dd_MM_yyyy')}.pdf`);
   };
 
   const requestSort = (key: keyof Registration | 'eventName') => {
@@ -360,14 +502,31 @@ export default function RegistrationsModule() {
             <button 
               onClick={exportToExcel}
               className="p-2.5 text-zinc-600 hover:text-white transition-all"
-              title="Exportar Excel"
+              title="Exportar Lista Excel"
             >
               <FileSpreadsheet size={20} />
             </button>
             <button 
               onClick={exportToPDF}
               className="p-2.5 text-zinc-600 hover:text-white transition-all border-l border-zinc-900"
-              title="Relatório PDF"
+              title="Exportar Lista PDF"
+            >
+              <FileText size={20} />
+            </button>
+          </div>
+
+          <div className="flex bg-zinc-950 p-1.5 rounded-2xl border border-zinc-900/50">
+            <button 
+              onClick={exportManagerialReportToExcel}
+              className="p-2.5 text-emerald-600 hover:text-emerald-400 transition-all"
+              title="Relatório Gerencial Excel (Agrupado)"
+            >
+              <Download size={20} />
+            </button>
+            <button 
+              onClick={exportManagerialReportToPDF}
+              className="p-2.5 text-emerald-600 hover:text-emerald-400 transition-all border-l border-zinc-900"
+              title="Relatório Gerencial PDF (Agrupado)"
             >
               <Printer size={20} />
             </button>
@@ -430,7 +589,7 @@ export default function RegistrationsModule() {
         </div>
 
         <div className="bg-zinc-950/50 p-10 rounded-[2.5rem] border border-zinc-900/50 group relative overflow-hidden">
-          <p className="text-zinc-600 text-[8px] font-black uppercase tracking-[0.4em] mb-6">Liquidados</p>
+          <p className="text-zinc-600 text-[8px] font-black uppercase tracking-[0.4em] mb-6">Pagos</p>
           <div className="flex items-center justify-between">
             <h3 className="text-5xl font-display font-medium text-emerald-500 tracking-tighter">
                {filteredRegistrations.filter(r => r.status === 'paid').length}
@@ -479,9 +638,9 @@ export default function RegistrationsModule() {
 
             <div className="bg-black/40 p-1.5 rounded-2xl border border-zinc-900 flex">
                {[
-                 { id: 'all', label: 'Tudo' },
-                 { id: 'paid', label: 'Liquidados' },
-                 { id: 'pending', label: 'Pendentes' }
+                 { id: 'all', label: 'Todos' },
+                 { id: 'paid', label: 'Pago' },
+                 { id: 'pending', label: 'Pendente' }
                ].map(tab => (
                  <button
                    key={tab.id}
@@ -496,36 +655,50 @@ export default function RegistrationsModule() {
                ))}
             </div>
 
-            <div className="hidden sm:flex bg-black/40 p-1.5 rounded-2xl border border-zinc-900 shadow-inner">
+            <div className="flex bg-black/40 p-1.5 rounded-2xl border border-zinc-900 shadow-inner">
                <button
                   onClick={() => setViewMode('table')}
                   className={cn(
-                    "p-3 rounded-xl transition-all",
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all",
                     viewMode === 'table' ? "bg-white text-black shadow-xl" : "text-zinc-700 hover:text-white"
                   )}
                   title="Tabela de Fluxo"
                >
-                  <ListIcon size={18} />
+                  <ListIcon size={16} />
+                  <span className="text-[9px] font-black uppercase tracking-widest hidden md:inline">Tabela</span>
                </button>
                <button
                   onClick={() => setViewMode('grid')}
                   className={cn(
-                    "p-3 rounded-xl transition-all",
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all",
                     viewMode === 'grid' ? "bg-white text-black shadow-xl" : "text-zinc-700 hover:text-white"
                   )}
                   title="Visão de Cards"
                >
-                  <LayoutGrid size={18} />
+                  <LayoutGrid size={16} />
+                  <span className="text-[9px] font-black uppercase tracking-widest hidden md:inline">Cards</span>
                </button>
                <button
                   onClick={() => setViewMode('charts')}
                   className={cn(
-                    "p-3 rounded-xl transition-all",
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all",
                     viewMode === 'charts' ? "bg-white text-black shadow-xl" : "text-zinc-700 hover:text-white"
                   )}
                   title="Relatório Visual"
                >
-                  <BarChart3 size={18} />
+                  <BarChart3 size={16} />
+                  <span className="text-[9px] font-black uppercase tracking-widest hidden md:inline">Gráficos</span>
+               </button>
+               <button
+                  onClick={() => setViewMode('treasury')}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all",
+                    viewMode === 'treasury' ? "bg-white text-black shadow-xl" : "text-zinc-700 hover:text-white"
+                  )}
+                  title="Tesouraria Consolidada"
+               >
+                  <Banknote size={16} />
+                  <span className="text-[9px] font-black uppercase tracking-widest hidden md:inline">Tesouraria</span>
                </button>
             </div>
           </div>
@@ -591,6 +764,8 @@ export default function RegistrationsModule() {
             <div className="h-40 flex items-center justify-center text-zinc-800 font-black text-[10px] uppercase tracking-[0.3em] animate-pulse">Sincronizando Core Financeiro...</div>
           ) : viewMode === 'charts' ? (
             <RegistrationReport registrations={filteredRegistrations} events={events} />
+          ) : viewMode === 'treasury' ? (
+            <TreasuryReport registrations={filteredRegistrations} events={events} />
           ) : filteredRegistrations.length === 0 ? (
             <div className="h-64 flex flex-col items-center justify-center text-center p-12">
               <div className="w-20 h-20 rounded-full bg-zinc-900 flex items-center justify-center text-zinc-800 mb-6 border border-zinc-800/50">
@@ -659,7 +834,7 @@ export default function RegistrationsModule() {
                     <div className="flex-1">
                       <table className="w-full border-collapse">
                         <tbody className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
-                          {filteredRegistrations.map((reg) => (
+                          {paginatedRegistrations.map((reg) => (
                             <tr 
                               key={reg.id} 
                               className="hover:bg-white/[0.02] border-b border-zinc-900 transition-all group cursor-pointer"
@@ -769,113 +944,148 @@ export default function RegistrationsModule() {
                     </div>
                   </div>
                 ) : viewMode === 'grid' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-10 overflow-y-auto">
-                    {filteredRegistrations.map((reg) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 p-6 overflow-y-auto">
+                    {paginatedRegistrations.map((reg) => (
                       <motion.div 
                         layout
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
                         key={reg.id} 
-                        className="bg-zinc-950/40 border border-zinc-900 rounded-[2.5rem] p-10 hover:border-zinc-700 transition-all cursor-pointer group relative overflow-hidden flex flex-col gap-10"
+                        className="bg-zinc-950/50 border border-zinc-900 rounded-[2rem] p-8 hover:border-white/10 transition-all cursor-pointer group relative overflow-hidden flex flex-col gap-8 shadow-2xl active:scale-[0.98]"
                         onClick={() => { setSelectedReg(reg); setIsDetailOpen(true); }}
                       >
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-white/[0.01] blur-3xl rounded-full -mr-32 -mt-32" />
+                        {/* Background Accent */}
+                        <div className={cn(
+                          "absolute top-0 right-0 w-32 h-32 blur-3xl opacity-5 -mr-16 -mt-16 rounded-full transition-all group-hover:opacity-20",
+                          reg.status === 'paid' ? "bg-emerald-500" : "bg-amber-500"
+                        )} />
                         
-                        <div className="flex items-start justify-between relative z-10">
-                          <div className="flex items-center gap-5">
+                        <div className="flex items-start justify-between relative z-10 gap-4">
+                          <div className="flex items-center gap-4">
                             <div className={cn(
-                              "w-14 h-14 rounded-2xl flex items-center justify-center text-sm font-black shadow-2xl",
-                              reg.isMinor ? "bg-rose-500/10 text-rose-500 border border-rose-500/20" : "bg-zinc-900 text-zinc-600 border border-zinc-800"
+                              "w-12 h-12 rounded-xl flex items-center justify-center text-xs font-black shadow-xl shrink-0 transition-transform group-hover:scale-110",
+                              reg.isMinor ? "bg-rose-500/20 text-rose-500 border border-rose-500/30" : "bg-zinc-900 text-zinc-400 border border-zinc-800"
                             )}>
                               {reg.name.substring(0, 2).toUpperCase()}
                             </div>
-                            <div>
-                               <h4 className="font-display font-medium text-white text-xl tracking-tight flex items-center gap-2">
+                            <div className="min-w-0">
+                               <h4 className="font-display font-medium text-white text-lg tracking-tight flex items-center gap-2 group-hover:text-emerald-400 transition-colors">
                                  {reg.name}
-                                 {isBirthdayUpcoming(reg.birthDate) && <Cake size={16} className="text-rose-400 animate-bounce" />}
+                                 {isBirthdayUpcoming(reg.birthDate) && <Cake size={14} className="text-rose-400 animate-bounce" />}
                                </h4>
-                               <p className="text-[10px] text-zinc-700 font-bold uppercase tracking-[0.2em] mt-1.5 truncate max-w-[180px]">{getEventName(reg.eventId)}</p>
+                               <div className="flex flex-wrap gap-2 mt-2">
+                                 {reg.isMember && (
+                                   <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[6px] font-black uppercase tracking-widest rounded-md border border-blue-500/20">Membro</span>
+                                 )}
+                                 {reg.isMinor && (
+                                   <span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-500 text-[6px] font-black uppercase tracking-widest rounded-md border border-rose-500/20">Menor</span>
+                                 )}
+                               </div>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          
+                          <div className={cn(
+                            "p-2 rounded-lg transition-all",
+                            reg.status === 'paid' ? "text-emerald-500 bg-emerald-500/10" : "text-amber-500 bg-amber-500/10"
+                          )}>
+                            {reg.status === 'paid' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                          </div>
+                        </div>
+
+                        <div className="space-y-4 relative z-10">
+                          <div>
+                            <p className="text-[7px] font-black text-zinc-700 uppercase tracking-[0.4em] mb-1">Evento Vinculado</p>
+                            <p className="text-xs text-zinc-300 font-medium truncate italic">{getEventName(reg.eventId)}</p>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-4 border-t border-zinc-900/50">
+                            <div>
+                              <p className="text-[7px] font-black text-zinc-700 uppercase tracking-[0.4em] mb-1">Contato</p>
+                              <div className="flex items-center gap-1.5 text-[10px] font-mono text-zinc-500">
+                                <Search size={10} className="text-zinc-800" />
+                                {reg.phone}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[7px] font-black text-zinc-700 uppercase tracking-[0.4em] mb-1">Financeiro</p>
+                              <p className={cn(
+                                "text-lg font-display font-medium tracking-tighter",
+                                reg.status === 'paid' ? "text-white" : "text-zinc-500"
+                              )}>
+                                R$ {reg.amountPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-auto flex items-center justify-between gap-3 relative z-10 pt-4">
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               if (reg.status === 'paid') {
+                                 handleTogglePayment(reg);
+                               } else {
+                                 setPaymentMenuId(paymentMenuId === reg.id ? null : (reg.id || null));
+                               }
+                             }}
+                             className={cn(
+                               "flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all active:scale-95",
+                               reg.status === 'paid' 
+                                 ? "bg-emerald-500 text-black border-emerald-500 shadow-lg shadow-emerald-500/10 hover:bg-emerald-400" 
+                                 : "bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:text-white hover:bg-zinc-800"
+                             )}
+                           >
+                             {reg.status === 'paid' ? 'Liquidado' : 'Audit Pendente'}
+                             {reg.status === 'pending' && <ChevronDown size={10} className={cn("transition-transform", paymentMenuId === reg.id && "rotate-180")} />}
+                           </button>
+
+                           <div className="flex gap-2">
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); setEditingReg(reg); setBirthDate(reg.birthDate || ''); setIsModalOpen(true); }}
+                               className="p-2.5 bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white rounded-xl transition-all"
+                               title="Editar"
+                             >
+                               <Edit2 size={14} />
+                             </button>
                              <button 
                                onClick={(e) => { e.stopPropagation(); setConfirmModal({ isOpen: true, id: reg.id! }); }}
-                               className="p-3 text-zinc-900 hover:text-rose-500 rounded-2xl transition-all opacity-0 group-hover:opacity-100 bg-white/5 hover:bg-rose-500/10"
+                               className="p-2.5 bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-rose-500 rounded-xl transition-all"
+                               title="Excluir"
                              >
-                               <Trash2 size={18} />
+                                <Trash2 size={14} />
                              </button>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between py-8 border-y border-zinc-900 relative z-10">
-                           <div className="space-y-2 relative">
-                              <p className="text-[9px] font-black text-zinc-800 uppercase tracking-[0.4em]">Audit Loop</p>
-                              <button 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (reg.status === 'paid') {
-                                    handleTogglePayment(reg);
-                                  } else {
-                                    setPaymentMenuId(paymentMenuId === reg.id ? null : (reg.id || null));
-                                  }
-                                }}
-                                className={cn(
-                                  "inline-flex items-center gap-3 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all active:scale-95",
-                                  reg.status === 'paid' ? "bg-emerald-500 text-black border-emerald-500 shadow-xl" : "bg-zinc-900 text-zinc-700 border-zinc-800 hover:text-zinc-300"
-                                )}
-                              >
-                                {reg.status === 'paid' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
-                                {reg.status === 'paid' ? 'Liquidado' : 'Audit Pendente'}
-                                {reg.status === 'pending' && <ChevronDown size={10} className={cn("transition-transform", paymentMenuId === reg.id && "rotate-180")} />}
-                              </button>
-
-                              <AnimatePresence>
-                                {paymentMenuId === reg.id && (
-                                  <motion.div 
-                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                                    className="absolute bottom-full mb-4 left-0 z-50 bg-black border border-zinc-900 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] p-2 min-w-[200px] flex flex-col gap-1.5"
-                                    onClick={e => e.stopPropagation()}
-                                  >
-                                    <p className="text-[8px] font-black text-zinc-600 uppercase tracking-widest p-3 border-b border-white/5 mb-1.5">Meio de Recebimento</p>
-                                    {[
-                                      { id: 'pix', label: 'Via PIX', icon: Search, color: 'text-emerald-400' },
-                                      { id: 'cash', label: 'Em Dinheiro', icon: Banknote, color: 'text-amber-400' },
-                                      { id: 'card', label: 'Via Cartão', icon: CreditCard, color: 'text-blue-400' }
-                                    ].map((method) => (
-                                      <button
-                                        key={method.id}
-                                        onClick={() => handleTogglePayment(reg, method.id as any)}
-                                        className="flex items-center gap-4 px-4 py-3 hover:bg-white/5 rounded-2xl transition-all group/item text-left"
-                                      >
-                                        <method.icon size={14} className={method.color} />
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400 group-hover/item:text-white leading-none">{method.label}</span>
-                                      </button>
-                                    ))}
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                           </div>
-                           <div className="text-right space-y-2">
-                              <p className="text-[9px] font-black text-zinc-800 uppercase tracking-[0.4em]">Montante</p>
-                              <p className="text-2xl font-display font-medium text-white tracking-tighter">R$ {reg.amountPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                            </div>
                         </div>
 
-                        <div className="flex items-center justify-between relative z-10 mt-auto">
-                            <div className="flex items-center gap-3 text-[10px] font-mono text-zinc-600 bg-black/40 px-4 py-2.5 rounded-2xl border border-zinc-900">
-                               <Search size={14} className="text-zinc-800" />
-                               {reg.phone}
-                            </div>
-                            <button 
-                              onClick={(e) => { e.stopPropagation(); setEditingReg(reg); setBirthDate(reg.birthDate || ''); setIsModalOpen(true); }}
-                              className="px-6 py-3 bg-zinc-900 border border-zinc-800 text-[10px] font-black text-zinc-500 uppercase tracking-widest rounded-2xl hover:bg-white hover:text-black transition-all active:scale-95 flex items-center gap-2"
+                        <AnimatePresence>
+                          {paymentMenuId === reg.id && (
+                            <motion.div 
+                              initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                              className="absolute inset-x-4 bottom-4 z-50 bg-black border border-zinc-900 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.8)] p-2 flex flex-col gap-1"
+                              onClick={e => e.stopPropagation()}
                             >
-                               <Edit2 size={14} />
-                               Editar
-                            </button>
-                        </div>
+                              <p className="text-[7px] font-black text-zinc-600 uppercase tracking-widest p-2 border-b border-white/5 mb-1 text-center">Meio de Recebimento</p>
+                              <div className="grid grid-cols-3 gap-1">
+                                {[
+                                  { id: 'pix', label: 'PIX', icon: Search, color: 'text-emerald-400' },
+                                  { id: 'cash', label: 'Dinheiro', icon: Banknote, color: 'text-amber-400' },
+                                  { id: 'card', label: 'Cartão', icon: CreditCard, color: 'text-blue-400' }
+                                ].map((method) => (
+                                  <button
+                                    key={method.id}
+                                    onClick={() => handleTogglePayment(reg, method.id as any)}
+                                    className="flex flex-col items-center gap-1.5 py-3 hover:bg-white/5 rounded-2xl transition-all group/item"
+                                  >
+                                    <method.icon size={14} className={method.color} />
+                                    <span className="text-[8px] font-black uppercase tracking-widest text-zinc-500 group-hover/item:text-white">{method.label}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </motion.div>
                     ))}
                   </div>
@@ -884,55 +1094,77 @@ export default function RegistrationsModule() {
 
               {/* Mobile View */}
               <div className="lg:hidden space-y-6 px-4 py-8 overflow-y-auto">
-                {filteredRegistrations.map((reg) => (
+                {paginatedRegistrations.map((reg) => (
                   <div 
                     key={reg.id} 
-                    className="bg-zinc-950 border border-zinc-900 rounded-[2rem] p-8 space-y-8 relative overflow-hidden group active:bg-zinc-900/50 transition-all"
+                    className="bg-zinc-950 border border-zinc-900 rounded-[2rem] p-6 space-y-6 relative overflow-hidden group active:bg-zinc-900/50 transition-all shadow-xl"
                     onClick={() => { setSelectedReg(reg); setIsDetailOpen(true); }}
                   >
-                    <div className="flex items-start justify-between gap-4">
+                    {/* Background Accent */}
+                    <div className={cn(
+                      "absolute top-0 right-0 w-24 h-24 blur-2xl opacity-5 -mr-12 -mt-12 rounded-full",
+                      reg.status === 'paid' ? "bg-emerald-500" : "bg-amber-500"
+                    )} />
+
+                    <div className="flex items-start justify-between gap-4 relative z-10">
                       <div className="flex items-center gap-4">
                         <div className={cn(
-                          "w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-black",
-                          reg.isMinor ? "bg-rose-500/10 text-rose-500" : "bg-zinc-900 text-zinc-700 border border-zinc-800"
+                          "w-12 h-12 rounded-2xl flex items-center justify-center text-xs font-black shadow-lg shrink-0",
+                          reg.isMinor ? "bg-rose-500/20 text-rose-500" : "bg-zinc-900 text-zinc-600 border border-zinc-800"
                         )}>
                           {reg.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div className="min-w-0">
                           <h4 className="font-display font-medium text-white text-lg tracking-tight truncate max-w-[150px]">{reg.name}</h4>
-                          <p className="text-[9px] text-zinc-800 font-bold uppercase tracking-widest mt-1 truncate">{getEventName(reg.eventId)}</p>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {reg.isMember && (
+                              <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 text-[6px] font-black uppercase tracking-widest rounded-md">Membro</span>
+                            )}
+                            {reg.isMinor && (
+                              <span className="px-1.5 py-0.5 bg-rose-500/10 text-rose-500 text-[6px] font-black uppercase tracking-widest rounded-md">Menor</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className={cn(
                         "px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest border transition-all shrink-0",
-                        reg.status === 'paid' ? "bg-emerald-500 text-black border-emerald-500" : "bg-black text-zinc-700 border-zinc-900"
+                        reg.status === 'paid' ? "bg-emerald-500 text-black border-emerald-500 shadow-lg shadow-emerald-500/20" : "bg-black text-zinc-700 border-zinc-900"
                       )}>
                         {reg.status === 'paid' ? 'Pago' : 'Pendente'}
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between py-6 border-y border-zinc-900/50">
-                       <div className="space-y-1">
-                          <p className="text-[8px] font-black uppercase tracking-widest text-zinc-800">Contato</p>
-                          <p className="text-xs text-zinc-400 font-mono tracking-tighter italic">{reg.phone}</p>
+                    <div className="space-y-4 relative z-10">
+                       <div className="flex items-center justify-between py-5 border-y border-zinc-900/50">
+                          <div className="space-y-1">
+                             <p className="text-[8px] font-black uppercase tracking-widest text-zinc-800">Evento</p>
+                             <p className="text-xs text-zinc-400 italic truncate max-w-[120px]">{getEventName(reg.eventId)}</p>
+                          </div>
+                          <div className="space-y-1 text-right">
+                             <p className="text-[8px] font-black uppercase tracking-widest text-zinc-800">Montante</p>
+                             <p className="text-lg font-display font-medium text-white tracking-tighter">R$ {reg.amountPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          </div>
                        </div>
-                       <div className="space-y-1 text-right">
-                          <p className="text-[8px] font-black uppercase tracking-widest text-zinc-800">Valor</p>
-                          <p className="text-lg font-display font-medium text-white tracking-tighter">R$ {reg.amountPaid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                       </div>
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                       <p className="text-[8px] text-zinc-800 font-black uppercase tracking-widest">
-                          {reg.registeredAt ? format(new Date(reg.registeredAt), 'dd MMM yyyy') : '-'}
-                       </p>
-                       <div className="flex gap-2">
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); setConfirmModal({ isOpen: true, id: reg.id! }); }}
-                            className="p-3 text-zinc-700 hover:text-rose-500 transition-all"
-                          >
-                             <Trash2 size={18} />
-                          </button>
+                       
+                       <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-600">
+                             <Search size={12} className="text-zinc-800" />
+                             {reg.phone}
+                          </div>
+                          <div className="flex gap-1.5">
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); setEditingReg(reg); setBirthDate(reg.birthDate || ''); setIsModalOpen(true); }}
+                               className="p-2.5 bg-zinc-900 border border-zinc-800 text-zinc-600 rounded-xl"
+                             >
+                                <Edit2 size={16} />
+                             </button>
+                             <button 
+                               onClick={(e) => { e.stopPropagation(); setConfirmModal({ isOpen: true, id: reg.id! }); }}
+                               className="p-2.5 bg-zinc-900 border border-zinc-800 text-zinc-600 hover:text-rose-500 transition-all rounded-xl"
+                             >
+                                <Trash2 size={16} />
+                             </button>
+                          </div>
                        </div>
                     </div>
                   </div>
@@ -941,8 +1173,65 @@ export default function RegistrationsModule() {
             </>
           )}
         </div>
-        <div className="px-6 md:px-10 py-5 bg-white/[0.02] border-t border-white/5 flex justify-between items-center text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
-           {filteredRegistrations.length} registros ativos
+        <div className="px-6 md:px-10 py-5 bg-white/[0.02] border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+           <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
+              {filteredRegistrations.length} registros ativos
+              {filteredRegistrations.length > 0 && (
+                <span className="ml-2 text-zinc-800">
+                  (Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredRegistrations.length)})
+                </span>
+              )}
+           </div>
+           
+           {totalPages > 1 && (
+             <div className="flex items-center gap-2">
+               <button
+                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                 disabled={currentPage === 1}
+                 className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+               >
+                 <ChevronDown size={16} className="rotate-90" />
+               </button>
+               
+               <div className="flex items-center gap-1">
+                 {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                   let pageNum: number;
+                   if (totalPages <= 5) {
+                     pageNum = i + 1;
+                   } else if (currentPage <= 3) {
+                     pageNum = i + 1;
+                   } else if (currentPage >= totalPages - 2) {
+                     pageNum = totalPages - 4 + i;
+                   } else {
+                     pageNum = currentPage - 2 + i;
+                   }
+                   
+                   return (
+                     <button
+                       key={pageNum}
+                       onClick={() => setCurrentPage(pageNum)}
+                       className={cn(
+                         "w-8 h-8 rounded-xl text-[10px] font-black transition-all",
+                         currentPage === pageNum 
+                           ? "bg-white text-black shadow-lg" 
+                           : "bg-zinc-950 text-zinc-600 hover:text-white"
+                       )}
+                     >
+                       {pageNum}
+                     </button>
+                   );
+                 })}
+               </div>
+
+               <button
+                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                 disabled={currentPage === totalPages}
+                 className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+               >
+                 <ChevronDown size={16} className="-rotate-90" />
+               </button>
+             </div>
+           )}
         </div>
       </div>
 
@@ -1021,11 +1310,41 @@ export default function RegistrationsModule() {
                           <p className="text-sm font-mono text-emerald-400 tracking-tighter">{selectedReg.phone || '-'}</p>
                        </div>
                        <div>
+                          <p className="text-[9px] font-black uppercase text-zinc-800 tracking-widest mb-2">E-mail</p>
+                          <p className="text-sm font-medium text-white truncate max-w-[150px]">{selectedReg.email || 'NÃO INFORMADO'}</p>
+                       </div>
+                       <div>
                           <p className="text-[9px] font-black uppercase text-zinc-800 tracking-widest mb-2">Fator Sanguíneo</p>
                           <p className="text-sm font-bold text-zinc-300">{selectedReg.bloodType || 'N/A'}</p>
                        </div>
+                       <div>
+                          <p className="text-[9px] font-black uppercase text-zinc-800 tracking-widest mb-2">Membro Igreja</p>
+                          <p className="text-sm font-bold text-zinc-300">{selectedReg.isMember ? 'SIM' : 'NÃO'}</p>
+                       </div>
                     </div>
                  </div>
+
+                 {/* Emergency Contacts */}
+                 {selectedReg.emergencyContacts && (
+                   <div className="space-y-8">
+                      <div className="flex items-center gap-4 border-b border-zinc-900 pb-4">
+                         <Users size={14} className="text-zinc-700" />
+                         <h4 className="text-[11px] font-black text-zinc-500 uppercase tracking-[0.4em]">Contatos de Emergência</h4>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6">
+                         <div className="bg-zinc-900/30 p-6 rounded-3xl border border-zinc-900 border-dashed">
+                            <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest mb-2">Responsável Primário</p>
+                            <p className="text-sm font-display font-medium text-white mb-1 tracking-tight">{selectedReg.emergencyContacts.name1}</p>
+                            <p className="text-[10px] font-mono text-emerald-500">{selectedReg.emergencyContacts.phone1}</p>
+                         </div>
+                         <div className="bg-zinc-900/30 p-6 rounded-3xl border border-zinc-900 border-dashed">
+                            <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest mb-2">Responsável Secundário</p>
+                            <p className="text-sm font-display font-medium text-white mb-1 tracking-tight">{selectedReg.emergencyContacts.name2}</p>
+                            <p className="text-[10px] font-mono text-emerald-500">{selectedReg.emergencyContacts.phone2}</p>
+                         </div>
+                      </div>
+                   </div>
+                 )}
 
                  {/* Extra Health Info */}
                  <div className="space-y-8">
@@ -1076,9 +1395,17 @@ export default function RegistrationsModule() {
                            )}
                         </div>
                      </div>
-                     <div className="text-right">
-                        <p className="text-[9px] font-black uppercase text-zinc-800 tracking-widest mb-2">Sincronizado</p>
-                        <p className="text-[10px] text-zinc-600 font-mono italic">{selectedReg.registeredAt ? format(new Date(selectedReg.registeredAt), 'dd/MM/yyyy HH:mm') : '-'}</p>
+                     <div className="text-right space-y-2">
+                        <div>
+                           <p className="text-[9px] font-black uppercase text-zinc-800 tracking-widest mb-1">Iniciado em</p>
+                           <p className="text-[10px] text-zinc-400 font-mono italic">{selectedReg.registeredAt ? format(new Date(selectedReg.registeredAt), 'dd/MM/yyyy HH:mm') : '-'}</p>
+                        </div>
+                        {selectedReg.updatedAt && (
+                          <div>
+                             <p className="text-[9px] font-black uppercase text-zinc-800 tracking-widest mb-1">Última Sync</p>
+                             <p className="text-[10px] text-emerald-500/60 font-mono italic">{format(new Date(selectedReg.updatedAt), 'dd/MM/yyyy HH:mm')}</p>
+                          </div>
+                        )}
                      </div>
                   </div>
 
@@ -1236,6 +1563,28 @@ export default function RegistrationsModule() {
                                defaultValue={editingReg?.phone}
                                placeholder="(00) 0 0000-0000"
                                className="w-full h-16 px-6 bg-zinc-900 border border-zinc-800 rounded-2xl text-sm font-mono text-white focus:border-white outline-none"
+                             />
+                           </div>
+                           <div className="space-y-3">
+                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-700 px-1">E-mail de Contato</label>
+                             <input 
+                               name="email"
+                               type="email"
+                               defaultValue={editingReg?.email}
+                               placeholder="exemplo@email.com"
+                               className="w-full h-16 px-6 bg-zinc-900 border border-zinc-800 rounded-2xl text-sm text-white focus:border-white outline-none"
+                             />
+                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-8">
+                           <div className="space-y-3">
+                             <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-700 px-1">Local de Residência</label>
+                             <input 
+                               name="address"
+                               defaultValue={editingReg?.address}
+                               placeholder="Rua, Número, Bairro, Cidade"
+                               className="w-full h-16 px-6 bg-zinc-900 border border-zinc-800 rounded-2xl text-sm text-white focus:border-white outline-none"
                              />
                            </div>
                            <div className="space-y-3">

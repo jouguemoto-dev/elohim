@@ -21,7 +21,8 @@ import {
   Download,
   Printer,
   Upload,
-  Cake
+  Cake,
+  ChevronDown
 } from 'lucide-react';
 import { churchService } from '../services/churchService';
 import { Member } from '../types';
@@ -51,6 +52,8 @@ export default function MembersModule() {
   const [memberAttachments, setMemberAttachments] = useState<Attachment[]>([]);
   const [memberPhotoUrl, setMemberPhotoUrl] = useState<string | undefined>(undefined);
   const [phoneValue, setPhoneValue] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   
   // Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -110,6 +113,14 @@ export default function MembersModule() {
 
     return matchesSearch && matchesStatus && matchesJoinDate && matchesBirthDate;
   });
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, joinDateStart, joinDateEnd, birthDateStart, birthDateEnd]);
+
+  const totalPages = Math.ceil(filteredMembers.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedMembers = filteredMembers.slice(startIndex, startIndex + itemsPerPage);
 
   const handleDelete = async (id: string) => {
     await churchService.deleteMember(id);
@@ -423,7 +434,7 @@ export default function MembersModule() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {filteredMembers.map((member) => (
+                {paginatedMembers.map((member) => (
                   <tr key={member.id} className="group">
                     <td className="px-6 py-5 bg-zinc-900/30 rounded-l-3xl border-y border-l border-zinc-900/50 group-hover:bg-zinc-900/50 transition-all">
                       <div className="flex items-center gap-5">
@@ -483,8 +494,65 @@ export default function MembersModule() {
             </table>
           )}
         </div>
-        <div className="px-10 py-5 border-t border-white/5 flex justify-between items-center text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em] bg-white/[0.02]">
-          {filteredMembers.length} registros no sistema
+        <div className="px-6 md:px-10 py-5 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/[0.02]">
+           <div className="text-[10px] text-zinc-600 font-bold uppercase tracking-[0.2em]">
+              {filteredMembers.length} registros no sistema
+              {filteredMembers.length > 0 && (
+                <span className="ml-2 text-zinc-800">
+                  (Mostrando {startIndex + 1} a {Math.min(startIndex + itemsPerPage, filteredMembers.length)})
+                </span>
+              )}
+           </div>
+
+           {totalPages > 1 && (
+             <div className="flex items-center gap-2">
+               <button
+                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                 disabled={currentPage === 1}
+                 className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+               >
+                 <ChevronDown size={16} className="rotate-90" />
+               </button>
+               
+               <div className="flex items-center gap-1">
+                 {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                   let pageNum: number;
+                   if (totalPages <= 5) {
+                     pageNum = i + 1;
+                   } else if (currentPage <= 3) {
+                     pageNum = i + 1;
+                   } else if (currentPage >= totalPages - 2) {
+                     pageNum = totalPages - 4 + i;
+                   } else {
+                     pageNum = currentPage - 2 + i;
+                   }
+                   
+                   return (
+                     <button
+                       key={pageNum}
+                       onClick={() => setCurrentPage(pageNum)}
+                       className={cn(
+                         "w-8 h-8 rounded-xl text-[10px] font-black transition-all",
+                         currentPage === pageNum 
+                           ? "bg-white text-black shadow-lg" 
+                           : "bg-zinc-950 text-zinc-600 hover:text-white"
+                       )}
+                     >
+                       {pageNum}
+                     </button>
+                   );
+                 })}
+               </div>
+
+               <button
+                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                 disabled={currentPage === totalPages}
+                 className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl text-zinc-500 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+               >
+                 <ChevronDown size={16} className="-rotate-90" />
+               </button>
+             </div>
+           )}
         </div>
       </div>
 

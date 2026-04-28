@@ -123,6 +123,12 @@ export default function App() {
                 publicId: 'reuniao-geral-' + Math.random().toString(36).substring(2, 7)
               });
             }
+
+            // Seed "Oficina" event type if it doesn't exist
+            const eventTypes = await churchService.getEventTypes();
+            if (!eventTypes.some(t => t.name === 'Oficina')) {
+              await churchService.addEventType('Oficina');
+            }
             
             // Only check upcoming events if we haven't already this session
             if (!hasCheckedUpcoming && events.length > 0) {

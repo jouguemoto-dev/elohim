@@ -26,7 +26,7 @@ import {
   Banknote
 } from 'lucide-react';
 import { churchService } from '../services/churchService';
-import { ChurchEvent, Registration, EventType, EventTemplate, ChurchSettings } from '../types';
+import { ChurchEvent, Registration, EventType, EventTemplate, ChurchSettings, EventPhase } from '../types';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { format } from 'date-fns';
@@ -61,7 +61,11 @@ export default function EventsModule() {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [templateRevision, setTemplateRevision] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [eventTypeFilter, setEventTypeFilter] = useState('all');
+  const [eventDateStart, setEventDateStart] = useState('');
+  const [eventDateEnd, setEventDateEnd] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [eventPhases, setEventPhases] = useState<EventPhase[]>([]);
 
   // Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -95,8 +99,10 @@ export default function EventsModule() {
   useEffect(() => {
     if (editingEvent) {
       setEventAttachments(editingEvent.attachments || []);
+      setEventPhases(editingEvent.phases || []);
     } else {
       setEventAttachments([]);
+      setEventPhases([]);
     }
   }, [editingEvent, isEventModalOpen]);
 
@@ -169,8 +175,11 @@ export default function EventsModule() {
       description: formData.get('description') as string,
       price,
       maxParticipants: Number(formData.get('maxParticipants')) || undefined,
+      pixKey: formData.get('pixKey') as string,
+      paymentLink: formData.get('paymentLink') as string,
       imageUrl: formData.get('imageUrl') as string,
       attachments: eventAttachments,
+      phases: eventPhases,
       publicId: editingEvent?.publicId || Math.random().toString(36).substring(2, 10),
     };
 
@@ -205,6 +214,9 @@ export default function EventsModule() {
       description: event.description,
       price: event.price,
       maxParticipants: event.maxParticipants,
+      phases: event.phases,
+      pixKey: event.pixKey,
+      paymentLink: event.paymentLink,
       createdAt: new Date().toISOString()
     });
     
@@ -230,10 +242,15 @@ export default function EventsModule() {
       description: template.description,
       price: template.price,
       maxParticipants: template.maxParticipants,
+      phases: template.phases || [],
+      pixKey: template.pixKey || '',
+      paymentLink: template.paymentLink || '',
       startDate: editingEvent?.startDate || '',
       endDate: editingEvent?.endDate || '',
       publicId: editingEvent?.publicId || Math.random().toString(36).substring(2, 10),
     } as ChurchEvent);
+    
+    setEventPhases(template.phases || []);
     
     setTemplateRevision(prev => prev + 1);
     setIsTemplateModalOpen(false);
@@ -369,6 +386,16 @@ export default function EventsModule() {
 
   const totalCollected = registrations.reduce((acc, curr) => acc + curr.amountPaid, 0);
 
+  const filteredEvents = events.filter(event => {
+    const matchesType = eventTypeFilter === 'all' || event.type === eventTypeFilter;
+    const eventDate = new Date(event.startDate).getTime();
+    const start = eventDateStart ? new Date(eventDateStart).getTime() : -Infinity;
+    // For end date, we want to include events that start on that day, so we compare start of day
+    const end = eventDateEnd ? new Date(eventDateEnd + 'T23:59:59').getTime() : Infinity;
+    
+    return matchesType && eventDate >= start && eventDate <= end;
+  });
+
   const filteredRegistrations = registrations.filter(reg => 
     reg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (reg.cpf && reg.cpf.includes(searchQuery)) ||
@@ -422,12 +449,62 @@ export default function EventsModule() {
           mobileView === 'detail' && "hidden lg:flex"
         )}>
            <div className="px-6 py-5 border-b border-zinc-900/50 bg-zinc-950/50">
-             <h3 className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.4em]">Agenda Cronológica</h3>
+             <h3 className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.4em] mb-4">Agenda Cronológica</h3>
+             
+             <div className="space-y-3">
+               <div>
+                 <label className="text-[8px] font-black text-zinc-700 uppercase tracking-widest block mb-1">Tipo de Evento</label>
+                 <select 
+                   value={eventTypeFilter}
+                   onChange={(e) => setEventTypeFilter(e.target.value)}
+                   className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-[10px] text-zinc-400 outline-none focus:ring-1 focus:ring-white/10"
+                 >
+                   <option value="all">Todos os Tipos</option>
+                   {eventTypes.map(t => (
+                     <option key={t.id} value={t.name}>{t.name}</option>
+                   ))}
+                 </select>
+               </div>
+               
+               <div className="grid grid-cols-2 gap-2">
+                 <div>
+                   <label className="text-[8px] font-black text-zinc-700 uppercase tracking-widest block mb-1">Início</label>
+                   <input 
+                     type="date"
+                     value={eventDateStart}
+                     onChange={(e) => setEventDateStart(e.target.value)}
+                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-2 text-[10px] text-zinc-400 outline-none focus:ring-1 focus:ring-white/10 [color-scheme:dark]"
+                   />
+                 </div>
+                 <div>
+                   <label className="text-[8px] font-black text-zinc-700 uppercase tracking-widest block mb-1">Término</label>
+                   <input 
+                     type="date"
+                     value={eventDateEnd}
+                     onChange={(e) => setEventDateEnd(e.target.value)}
+                     className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-2 py-2 text-[10px] text-zinc-400 outline-none focus:ring-1 focus:ring-white/10 [color-scheme:dark]"
+                   />
+                 </div>
+               </div>
+               
+               {(eventTypeFilter !== 'all' || eventDateStart || eventDateEnd) && (
+                 <button 
+                   onClick={() => {
+                     setEventTypeFilter('all');
+                     setEventDateStart('');
+                     setEventDateEnd('');
+                   }}
+                   className="w-full py-2 text-[9px] font-black uppercase tracking-widest text-zinc-700 hover:text-white transition-colors"
+                 >
+                   Limpar Filtros
+                 </button>
+               )}
+             </div>
            </div>
            <div className="flex-1 overflow-y-auto divide-y divide-zinc-900/30 px-2 pt-2">
-             {events.length === 0 ? (
+             {filteredEvents.length === 0 ? (
                <div className="p-8 text-center text-zinc-800 font-black text-[9px] uppercase tracking-[0.3em] italic py-12 px-10">Agenda limpa no momento</div>
-             ) : events.map(event => (
+             ) : filteredEvents.map(event => (
                <button
                  key={event.id}
                  onClick={() => { setSelectedEvent(event); setMobileView('detail'); }}
@@ -564,10 +641,84 @@ export default function EventsModule() {
                       </div>
                     </div>
 
-                    <div>
-                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mb-6 border-b border-white/5 pb-3">Detalhamento</h4>
-                      <p className="text-sm text-zinc-400 leading-[1.8] font-medium whitespace-pre-wrap">{selectedEvent.description || 'Nenhum descritivo em anexo.'}</p>
-                    </div>
+                      <div>
+                        <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mb-6 border-b border-white/5 pb-3">Detalhamento</h4>
+                        <p className="text-sm text-zinc-400 leading-[1.8] font-medium whitespace-pre-wrap">{selectedEvent.description || 'Nenhum descritivo em anexo.'}</p>
+                      </div>
+
+                      {(selectedEvent.pixKey || selectedEvent.paymentLink) && (
+                        <div>
+                          <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mb-6 border-b border-white/5 pb-3">Dados para Pagamento</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {selectedEvent.pixKey && (
+                              <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl group">
+                                <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest mb-3">Chave PIX</p>
+                                <div className="flex items-center justify-between">
+                                  <code className="text-xs text-white font-mono">{selectedEvent.pixKey}</code>
+                                  <button 
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(selectedEvent.pixKey!);
+                                      alert('Chave PIX copiada!');
+                                    }}
+                                    className="p-2 text-zinc-600 hover:text-white transition-colors"
+                                  >
+                                    <Copy size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            {selectedEvent.paymentLink && (
+                              <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl group">
+                                <p className="text-[8px] font-black text-zinc-700 uppercase tracking-widest mb-3">Cartão de Crédito</p>
+                                <a 
+                                  href={selectedEvent.paymentLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-between group/link"
+                                >
+                                  <span className="text-xs text-emerald-400 font-medium italic underline underline-offset-4">Link de Pagamento (InfinitePay)</span>
+                                  <ExternalLink size={14} className="text-zinc-600 group-hover/link:text-white" />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedEvent.phases && selectedEvent.phases.length > 0 && (
+                        <div>
+                          <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-[0.3em] mb-6 border-b border-white/5 pb-3">Fases do Projeto</h4>
+                          <div className="space-y-4">
+                            {selectedEvent.phases.map((phase, idx) => (
+                              <div key={phase.id} className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-1 h-full bg-white opacity-20" />
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                  <div>
+                                    <h5 className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+                                      <span className="text-[9px] bg-zinc-800 text-zinc-500 w-5 h-5 rounded-full flex items-center justify-center shrink-0">{idx + 1}</span>
+                                      {phase.name}
+                                    </h5>
+                                    <p className="text-xs text-zinc-500 mb-2">{phase.description}</p>
+                                    <div className="flex items-center gap-4">
+                                      <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                                        <Calendar size={12} className="text-zinc-600" />
+                                        {format(new Date(phase.startDate), 'dd/MM/yy')}
+                                      </div>
+                                      <div className="flex items-center gap-1.5 text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                                        <ChevronRight size={12} className="text-zinc-600" />
+                                        {format(new Date(phase.endDate), 'dd/MM/yy')}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/5 text-[9px] font-black uppercase tracking-widest text-zinc-500">
+                                    Fase {idx + 1}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
 
                     {selectedEvent.imageUrl && (
                       <div className="rounded-[2rem] overflow-hidden border border-white/5 shadow-2xl relative group">
@@ -983,6 +1134,25 @@ export default function EventsModule() {
                   />
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-1">Chave PIX para Inscrição</label>
+                    <input 
+                      name="pixKey" defaultValue={editingEvent?.pixKey}
+                      placeholder="E-mail, CPF, Celular ou Chave Aleatória" 
+                      className="w-full px-5 py-3.5 bg-white/5 border border-white/5 rounded-2xl text-sm text-white focus:ring-2 focus:ring-white/10 outline-none transition-all placeholder:text-zinc-700"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-1">Link de Pagamento (InfinitePay / Outros)</label>
+                    <input 
+                      name="paymentLink" defaultValue={editingEvent?.paymentLink}
+                      placeholder="https://pay.infinitepay.io/..." 
+                      className="w-full px-5 py-3.5 bg-white/5 border border-white/5 rounded-2xl text-sm text-white focus:ring-2 focus:ring-white/10 outline-none transition-all placeholder:text-zinc-700"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-1">Descritivo Detalhado</label>
                   <textarea 
@@ -991,6 +1161,96 @@ export default function EventsModule() {
                     placeholder="Objetivo, público-alvo, recomendações..."
                     className="w-full px-5 py-4 bg-white/5 border border-white/5 rounded-2xl text-sm text-white focus:ring-2 focus:ring-white/10 outline-none transition-all resize-none placeholder:text-zinc-700"
                   />
+                </div>
+
+                <div className="pt-4 border-t border-white/5 space-y-6">
+                  <div className="flex items-center justify-between">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 px-1">Fases do Cronograma</label>
+                    <button 
+                      type="button"
+                      onClick={() => setEventPhases([...eventPhases, { id: Date.now().toString(), name: '', description: '', startDate: '', endDate: '' }])}
+                      className="px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-white hover:bg-white/10 transition-all flex items-center gap-2"
+                    >
+                      <Plus size={14} />
+                      Nova Fase
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {eventPhases.map((phase, index) => (
+                      <div key={phase.id} className="p-6 bg-zinc-950 border border-white/5 rounded-3xl space-y-4 relative group">
+                        <button 
+                          type="button"
+                          onClick={() => setEventPhases(eventPhases.filter(p => p.id !== phase.id))}
+                          className="absolute top-4 right-4 p-2 text-zinc-700 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 px-1">Nome da Fase {index + 1}</label>
+                            <input 
+                              value={phase.name}
+                              onChange={(e) => {
+                                const newPhases = [...eventPhases];
+                                newPhases[index].name = e.target.value;
+                                setEventPhases(newPhases);
+                              }}
+                              placeholder="Ex: Inscrições, Workshop, etc"
+                              className="w-full px-4 py-3 bg-white/5 border border-white/5 rounded-xl text-xs text-white outline-none focus:ring-1 focus:ring-white/10 transition-all"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 px-1">Início</label>
+                              <input 
+                                type="date"
+                                value={phase.startDate}
+                                onChange={(e) => {
+                                  const newPhases = [...eventPhases];
+                                  newPhases[index].startDate = e.target.value;
+                                  setEventPhases(newPhases);
+                                }}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/5 rounded-xl text-xs text-white outline-none [color-scheme:dark]"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 px-1">Término</label>
+                              <input 
+                                type="date"
+                                value={phase.endDate}
+                                onChange={(e) => {
+                                  const newPhases = [...eventPhases];
+                                  newPhases[index].endDate = e.target.value;
+                                  setEventPhases(newPhases);
+                                }}
+                                className="w-full px-4 py-3 bg-white/5 border border-white/5 rounded-xl text-xs text-white outline-none [color-scheme:dark]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[9px] font-bold uppercase tracking-widest text-zinc-600 px-1">Descrição Curta</label>
+                          <input 
+                            value={phase.description}
+                            onChange={(e) => {
+                              const newPhases = [...eventPhases];
+                              newPhases[index].description = e.target.value;
+                              setEventPhases(newPhases);
+                            }}
+                            placeholder="Breve resumo das atividades desta fase..."
+                            className="w-full px-4 py-3 bg-white/5 border border-white/5 rounded-xl text-xs text-white outline-none focus:ring-1 focus:ring-white/10 transition-all"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    {eventPhases.length === 0 && (
+                      <div className="text-center py-8 border-2 border-dashed border-white/5 rounded-3xl text-[9px] font-bold text-zinc-700 uppercase tracking-widest">
+                        Nenhuma fase estruturada para este projeto
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="pt-4 border-t border-white/5">

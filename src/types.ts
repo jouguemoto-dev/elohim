@@ -25,6 +25,14 @@ export interface Member {
   attachments?: Attachment[];
 }
 
+export interface EventPhase {
+  id: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+}
+
 export interface ChurchEvent {
   id?: string;
   title: string;
@@ -38,6 +46,9 @@ export interface ChurchEvent {
   publicId: string;
   imageUrl?: string;
   attachments?: Attachment[];
+  phases?: EventPhase[];
+  pixKey?: string;
+  paymentLink?: string;
 }
 
 export interface EventType {
@@ -70,6 +81,8 @@ export interface Registration {
   amountPaid: number;
   paymentMethod?: 'pix' | 'cash' | 'card';
   registeredAt?: string;
+  updatedAt?: string;
+  email?: string;
 }
 
 export interface ChurchSettings {
@@ -98,6 +111,9 @@ export interface EventTemplate {
   price: number;
   maxParticipants?: number;
   createdAt: string;
+  phases?: EventPhase[];
+  pixKey?: string;
+  paymentLink?: string;
 }
 
 export interface AccessRequest {

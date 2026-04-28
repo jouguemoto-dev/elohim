@@ -49,9 +49,24 @@
         "maxParticipants": { "type": "integer" },
         "publicId": { "type": "string", "description": "Unique ID for public sharing" },
         "imageUrl": { "type": "string", "format": "uri" },
-        "attachments": { "type": "array", "items": { "$ref": "#/definitions/Attachment" } }
+        "attachments": { "type": "array", "items": { "$ref": "#/definitions/Attachment" } },
+        "phases": { "type": "array", "items": { "$ref": "#/definitions/EventPhase" } },
+        "pixKey": { "type": "string" },
+        "paymentLink": { "type": "string", "format": "uri" }
       },
       "required": ["title", "type", "startDate", "endDate", "publicId"]
+    },
+    "EventPhase": {
+      "title": "Event Phase",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "endDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "startDate", "endDate"]
     },
     "Registration": {
       "title": "Registration",
@@ -82,7 +97,9 @@
         "observations": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "paid"] },
         "amountPaid": { "type": "number" },
-        "registeredAt": { "type": "string", "format": "date-time" }
+        "registeredAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "email": { "type": "string", "format": "email" }
       },
       "required": ["eventId", "name", "phone", "status"]
     },
@@ -106,7 +123,10 @@
         "description": { "type": "string" },
         "price": { "type": "number" },
         "maxParticipants": { "type": "integer" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "phases": { "type": "array", "items": { "$ref": "#/definitions/EventPhase" } },
+        "pixKey": { "type": "string" },
+        "paymentLink": { "type": "string", "format": "uri" }
       },
       "required": ["name", "title", "type"]
     },
