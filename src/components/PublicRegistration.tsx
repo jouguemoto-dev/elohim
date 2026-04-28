@@ -82,6 +82,7 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
       const regData = {
         eventId: event.id!,
         name,
+        email: (formData.get('email') as string) || '',
         phone: (formData.get('phone') as string) || '',
         cpf: (formData.get('cpf') as string) || '',
         address: (formData.get('address') as string) || '',
@@ -100,6 +101,7 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
         observations: (formData.get('observations') as string) || null,
         status: 'pending' as const,
         amountPaid: 0,
+        updatedAt: new Date().toISOString(),
       };
 
       await churchService.addRegistration(regData);
@@ -379,6 +381,20 @@ export default function PublicRegistration({ publicId }: { publicId: string }) {
                       />
                     </div>
                   </div>
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500 px-1">E-mail de Contato *</label>
+                    <div className="relative group">
+                      <FileText className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-white transition-colors" size={20} />
+                      <input 
+                        required type="email" name="email" 
+                        placeholder="exemplo@email.com" 
+                        className="w-full pl-14 pr-6 py-4 bg-white/5 border border-white/5 rounded-2xl text-sm text-white focus:ring-2 focus:ring-white/10 outline-none transition-all placeholder:text-zinc-800 font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <label className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-500 px-1">CPF *</label>
                     <div className="relative group">

@@ -20,10 +20,14 @@ service cloud.firestore {
     // Event Validation
     function isValidEvent(data) {
       return data.title is string && data.title.size() > 0 && data.title.size() <= 256 &&
-             data.type in ['Culto', 'Acampamento', 'Congresso', 'Passeio', 'Outro'] &&
+             data.type is string && data.type.size() > 0 &&
              data.publicId is string && data.publicId.size() > 0 &&
              (!('imageUrl' in data) || (data.imageUrl is string)) &&
-             (!('attachments' in data) || (data.attachments is list));
+             (!('attachments' in data) || (data.attachments is list)) &&
+             (!('description' in data) || (data.description is string)) &&
+             (!('location' in data) || (data.location is string)) &&
+             (!('email' in data) || (data.email is string)) &&
+             (!('price' in data) || (data.price is number));
     }
 
     // Registration Validation
@@ -34,11 +38,13 @@ service cloud.firestore {
              data.status in ['pending', 'paid'] &&
              (!('isMember' in data) || data.isMember is bool) &&
              (!('cpf' in data) || data.cpf is string) &&
+             (!('email' in data) || data.email is string) &&
              (!('address' in data) || data.address is string) &&
              (!('birthDate' in data) || data.birthDate is string) &&
              (!('isMinor' in data) || data.isMinor is bool) &&
              (!('amountPaid' in data) || data.amountPaid is number) &&
              (!('registeredAt' in data) || data.registeredAt is string) &&
+             (!('updatedAt' in data) || data.updatedAt is string) &&
              (!('memberId' in data) || data.memberId is string) &&
              (!('bloodType' in data) || data.bloodType is string) &&
              (!('allergies' in data) || data.allergies is string) &&

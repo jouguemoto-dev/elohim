@@ -62,8 +62,9 @@ export default function App() {
 
   // Handle routing for public registration form
   const path = window.location.pathname;
-  const isPublicUrl = path.startsWith('/inscrever/');
-  const eventPublicId = isPublicUrl ? path.split('/').pop() : null;
+  const pathSegments = path.split('/').filter(Boolean);
+  const isPublicUrl = pathSegments[0] === 'inscrever';
+  const eventPublicId = isPublicUrl ? pathSegments[1] : null;
 
   const [loginError, setLoginError] = useState<string | null>(null);
 
